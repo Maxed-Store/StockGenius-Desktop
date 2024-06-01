@@ -5,9 +5,11 @@ class Database {
     this.db = new Dexie('MyDatabase');
     this.db.version(2).stores({
       stores: '++id,name',
-      products: '++id,storeId,userDefinedId,name,description,price,quantity,&[storeId+name+userDefinedId]',
+      products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,&[storeId+name+userDefinedId]',
       sales: '++id,storeId,productId,quantity,total,timestamp',
-      recentSearches: '++id,storeId,searchTerm,timestamp'
+      recentSearches: '++id,storeId,searchTerm,timestamp',
+      categories: '++id,name',
+      customers: '++id,name,email'
     });
   }
 
@@ -23,6 +25,7 @@ class Database {
   async getProducts(storeId) {
     return this.db.products.where('storeId').equals(storeId).toArray();
   }
+
   async addRecentSearch(storeId, searchTerm) {
     const timestamp = new Date().toISOString();
     await this.db.recentSearches.add({ storeId, searchTerm, timestamp });
@@ -38,9 +41,9 @@ class Database {
     return recentSearches.map((search) => search.searchTerm);
   }
 
-  async addProduct(storeId, userDefinedId, name, description, price, quantity) {
-    const id = await this.db.products.add({ storeId, userDefinedId, name, description, price, quantity });
-    return { id, storeId, userDefinedId, name, description, price, quantity };
+  async addProduct(storeId, userDefinedId, name, description, price, quantity, categoryId) {
+    const id = await this.db.products.add({ storeId, userDefinedId, name, description, price, quantity, categoryId });
+    return { id, storeId, userDefinedId, name, description, price, quantity, categoryId };
   }
 
   async sellProduct(storeId, productId, quantity) {
@@ -82,29 +85,70 @@ class Database {
     const id = await this.db.sales.add(sale);
     return { id, ...sale };
   }
-async searchProducts(searchTerm) {
-  if (typeof searchTerm !== 'string') {
-    throw new Error('Invalid searchTerm. It should be a string.');
-  }
 
-  let products;
+  async searchProducts(searchTerm) {
+    if (typeof searchTerm !== 'string') {
+      throw new Error('Invalid searchTerm. It should be a string.');
+    }
 
-  products = await this.db.products
-    .where('userDefinedId')
-    .equals(searchTerm)
-    .toArray();
+    let products;
 
-
-  if (products.length === 0) {
     products = await this.db.products
-      .where('name')
-      .startsWithIgnoreCase(searchTerm)
+      .where('userDefinedId')
+      .equals(searchTerm)
       .toArray();
+
+    if (products.length === 0) {
+      products = await this.db.products
+        .where('name')
+        .startsWithIgnoreCase(searchTerm)
+        .toArray();
+    }
+
+    console.log(products);
+    return products;
   }
 
-  console.log(products);
-  return products;
-}
+  async addCategory(name) {
+    const id = await this.db.categories.add({ name });
+    return { id, name };
+  }
+
+  async getCategories() {
+    return this.db.categories.toArray();
+  }
+
+  async addCustomer(name, email) {
+    const id = await this.db.customers.add({ name, email });
+    return { id, name, email };
+  }
+
+  async getCustomers() {
+    return this.db.customers.toArray();
+  }
+
+  async checkInventoryLevels(threshold) {
+    const products = await this.db.products.where('quantity').below(threshold).toArray();
+    return products;
+  }
+
+  async getFilteredProducts({ name, minQuantity, maxQuantity }) {
+    let collection = this.db.products.toCollection();
+
+    if (name) {
+      collection = collection.filter((product) => product.name.toLowerCase().includes(name.toLowerCase()));
+    }
+
+    if (minQuantity !== undefined) {
+      collection = collection.filter((product) => product.quantity >= minQuantity);
+    }
+
+    if (maxQuantity !== undefined) {
+      collection = collection.filter((product) => product.quantity <= maxQuantity);
+    }
+
+    return collection.toArray();
+  }
 }
 
 const db = new Database();

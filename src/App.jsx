@@ -4,10 +4,16 @@ import HomePage from './pages/HomePage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
 import SalesPage from './pages/SalesPage.jsx';
 import SalesReportPage from './pages/SalesReportPage.jsx';
+import CustomersPage from './pages/CustomersPage.jsx';
+import InventoryPage from './pages/InventoryPage.jsx';
+import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline, Box } from '@mui/material';
+import { Home as HomeIcon, Inventory as InventoryIcon, ShoppingCart as ShoppingCartIcon, Assessment as AssessmentIcon, People as PeopleIcon, Storage as StorageIcon } from '@mui/icons-material';
 import './index.css';
 
+const drawerWidth = 240;
+
 function App() {
-  const [activeLink, setActiveLink] = useState(null);
+  const [activeLink, setActiveLink] = useState('/');
 
   const handleLinkClick = (link) => {
     setActiveLink(link);
@@ -15,60 +21,80 @@ function App() {
 
   return (
     <Router>
-      <div className="app-container">
-        <nav className="sidebar">
-          <div className="logo">
-            <h3>MaxStore local</h3>
-          </div>
-          <ul className="nav-menu">
-            <li>
-              <NavLink
-                to="/"
-                className={`nav-link ${activeLink === '/' ? 'active-link' : ''}`}
-                onClick={() => handleLinkClick('/')}
-              >
-                <i className="fa fa-home"></i> Home
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/products"
-                className={`nav-link ${activeLink === '/products' ? 'active-link' : ''}`}
-                onClick={() => handleLinkClick('/products')}
-              >
-                <i className="fa fa-box"></i> Products
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/sales"
-                className={`nav-link ${activeLink === '/sales' ? 'active-link' : ''}`}
-                onClick={() => handleLinkClick('/sales')}
-              >
-                <i className="fa fa-shopping-cart"></i> Sales
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/sales-report"
-                className={`nav-link ${activeLink === '/sales-report' ? 'active-link' : ''}`}
-                onClick={() => handleLinkClick('/sales-report')}
-              >
-                <i className="fa fa-chart-line"></i> Sales Report
-              </NavLink>
-            </li>
-          </ul>
-        </nav>
-
-        <main className="content">
+      <Box sx={{ display: 'flex' }}>
+        <CssBaseline />
+        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+          <Toolbar>
+            <Typography variant="h6" noWrap component="div">
+              MaxStore Local
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Drawer
+          variant="permanent"
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+          }}
+        >
+          <Toolbar />
+          <Box sx={{ overflow: 'auto' }}>
+            <List>
+              <ListItem button component={NavLink} to="/" selected={activeLink === '/'} onClick={() => handleLinkClick('/')}>
+                <ListItemIcon>
+                  <HomeIcon />
+                </ListItemIcon>
+                <ListItemText primary="Home" />
+              </ListItem>
+              <ListItem button component={NavLink} to="/products" selected={activeLink === '/products'} onClick={() => handleLinkClick('/products')}>
+                <ListItemIcon>
+                  <StorageIcon />
+                </ListItemIcon>
+                <ListItemText primary="Products" />
+              </ListItem>
+              <ListItem button component={NavLink} to="/sales" selected={activeLink === '/sales'} onClick={() => handleLinkClick('/sales')}>
+                <ListItemIcon>
+                  <ShoppingCartIcon />
+                </ListItemIcon>
+                <ListItemText primary="Sales" />
+              </ListItem>
+              <ListItem button component={NavLink} to="/sales-report" selected={activeLink === '/sales-report'} onClick={() => handleLinkClick('/sales-report')}>
+                <ListItemIcon>
+                  <AssessmentIcon />
+                </ListItemIcon>
+                <ListItemText primary="Sales Report" />
+              </ListItem>
+              <ListItem button component={NavLink} to="/customers" selected={activeLink === '/customers'} onClick={() => handleLinkClick('/customers')}>
+                <ListItemIcon>
+                  <PeopleIcon />
+                </ListItemIcon>
+                <ListItemText primary="Customers" />
+              </ListItem>
+              <ListItem button component={NavLink} to="/inventory" selected={activeLink === '/inventory'} onClick={() => handleLinkClick('/inventory')}>
+                <ListItemIcon>
+                  <InventoryIcon />
+                </ListItemIcon>
+                <ListItemText primary="Inventory" />
+              </ListItem>
+            </List>
+          </Box>
+        </Drawer>
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+        >
+          <Toolbar />
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/sales" element={<SalesPage />} />
             <Route path="/sales-report" element={<SalesReportPage storeId={1} />} />
           </Routes>
-        </main>
-      </div>
+        </Box>
+      </Box>
     </Router>
   );
 }
