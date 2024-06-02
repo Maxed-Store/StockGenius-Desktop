@@ -30,4 +30,20 @@ npm install
 npm start
 ```
 
+# Running in Debug Mode
+
+This document provides instructions on how to run the application in debug mode on both Unix-based systems (like Linux or macOS) and Windows.
+
+## Unix-based Systems
+
+To run the application in debug mode on Unix-based systems, use the `DEBUG` environment variable. Set it to `electron-forge:*` before running your command. Here's how you can do it:
+
+```bash
+DEBUG=electron-forge:* npm run start
+```
+## Windows
+On Windows, you can set environment variables using the set command before running your command. Here's how you can do it:
+```bash
+set DEBUG=electron-forge:* && npm run start
+```
 After running `npm start`, a new window will open with the application running.
