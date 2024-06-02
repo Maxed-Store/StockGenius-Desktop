@@ -11,9 +11,6 @@ import {
   Button,
   List,
   ListItem,
-  Card,
-  CardContent,
-  CardActions,
   Grid,
   Paper,
   Box,
@@ -43,7 +40,7 @@ const HomePage = ({ storeId = 1 }) => {
     const fetchRecentSearches = async () => {
       if (storeId !== undefined) {
         const recentSearches = await database.getRecentSearches(storeId);
-        setRecentSearches(recentSearches);
+        setRecentSearches(recentSearches.slice(-10)); // Get only the last 10 items
       }
     };
 
@@ -51,15 +48,19 @@ const HomePage = ({ storeId = 1 }) => {
     fetchRecentSearches();
   }, [storeId]);
 
-  const handleSearch = async (searchTerms) => {
+  const handleSearch = async () => {
     try {
-      const searchResults = await database.searchProducts(searchTerms);
+      const searchResults = await database.searchProducts(searchTerm);
       if (searchResults.length === 0) {
         setError('No products found');
       } else {
         setError(null);
         setProducts(searchResults);
-        await database.addRecentSearch(storeId, searchTerms);
+        await database.addRecentSearch(storeId, searchTerm);
+        setRecentSearches((prevSearches) => {
+          const updatedSearches = [...prevSearches, searchTerm];
+          return updatedSearches.slice(-10); // Keep only the last 10 searches
+        });
       }
     } catch (err) {
       setError(err.message);
@@ -83,7 +84,6 @@ const HomePage = ({ storeId = 1 }) => {
         <head>
           <title>Print Bill</title>
           <style>
-            /* Define your print styles here */
             body {
               font-family: Arial, sans-serif;
             }
@@ -91,7 +91,6 @@ const HomePage = ({ storeId = 1 }) => {
               width: 100%;
               margin: auto;
             }
-            /* Add more styles as needed */
           </style>
         </head>
         <body>
@@ -132,7 +131,7 @@ const HomePage = ({ storeId = 1 }) => {
       </AppBar>
       <Container>
         {store ? (
-          <div>
+          <Box my={4}>
             <Typography variant="h4" component="h2" gutterBottom>
               Welcome to {store.name}
             </Typography>
@@ -144,10 +143,9 @@ const HomePage = ({ storeId = 1 }) => {
                     variant="outlined"
                     label="Search Products"
                     value={searchTerm}
-                    onChange={(e) =>{ 
-                      setSearchTerm(e.target.value)
-                      setError(null)
-                      handleSearch(e.target.value)
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setError(null);
                     }}
                   />
                 </Grid>
@@ -157,6 +155,7 @@ const HomePage = ({ storeId = 1 }) => {
                     variant="contained"
                     color="primary"
                     onClick={handleSearch}
+                    sx={{ height: '100%' }}
                   >
                     Search
                   </Button>
@@ -170,17 +169,22 @@ const HomePage = ({ storeId = 1 }) => {
             )}
             <Box my={3}>
               <Typography variant="h5">Recent Searches</Typography>
-              <List>
-                {recentSearches.map((search, index) => (
-                  <ListItem
-                    button
-                    key={index}
-                    onClick={() => setSearchTerm(search)}
-                  >
-                    {search}
-                  </ListItem>
-                ))}
-              </List>
+              <Paper elevation={3} sx={{ maxHeight: 200, overflow: 'auto' }}>
+                <List>
+                  {recentSearches.map((search, index) => (
+                    <ListItem
+                      button
+                      key={index}
+                      onClick={() => {
+                        setSearchTerm(search);
+                        handleSearch();
+                      }}
+                    >
+                      {search}
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
             </Box>
             <Box my={3}>
               <Typography variant="h5">Product List</Typography>
@@ -205,11 +209,12 @@ const HomePage = ({ storeId = 1 }) => {
                 variant="contained"
                 color="secondary"
                 onClick={handlePrint}
+                sx={{ mt: 2 }}
               >
                 Print Bill
               </Button>
             </Box>
-          </div>
+          </Box>
         ) : (
           <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
             <Typography variant="h4" gutterBottom>

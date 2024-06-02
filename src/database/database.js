@@ -9,9 +9,17 @@ class Database {
       sales: '++id,storeId,productId,quantity,total,timestamp',
       recentSearches: '++id,storeId,searchTerm,timestamp',
       categories: '++id,name',
-      customers: '++id,name,email'
+      customers: '++id,name,email',
+      users: '++id,username,password',
     });
   }
+  async addUser(username, password) {
+    return db.users.add({ username, password });
+  };
+
+  async getUser(username) {
+    return db.users.where({ username }).first();
+  };
 
   async getStores() {
     return this.db.stores.toArray();

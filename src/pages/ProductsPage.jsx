@@ -1,4 +1,12 @@
 import React, { useState } from 'react';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  Paper,
+} from '@mui/material';
 import database from '../database/database';
 import './ProductsPage.css';
 
@@ -10,7 +18,14 @@ const ProductsPage = ({ storeId }) => {
   const [quantity, setQuantity] = useState(0);
 
   const handleAddProduct = async () => {
-    const product = await database.addProduct(storeId, userDefinedId, name, description, price, quantity);
+    const product = await database.addProduct(
+      storeId,
+      userDefinedId,
+      name,
+      description,
+      price,
+      quantity
+    );
     console.log('Added product:', product);
     setUserDefinedId('');
     setName('');
@@ -20,64 +35,68 @@ const ProductsPage = ({ storeId }) => {
   };
 
   return (
-    <div className="products-page">
-      <h2>Add Product</h2>
-      <div className="form-container">
-        <div className="form-group">
-          <label htmlFor="userDefinedId">Product Tag Number</label>
-          <input
-            type="text"
-            id="userDefinedId"
-            placeholder="Enter product tag number"
-            value={userDefinedId}
-            onChange={(e) => setUserDefinedId(e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="name">Product Name</label>
-          <input
-            type="text"
-            id="name"
-            placeholder="Enter product name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="description">Product Description</label>
-          <input
-            type="text"
-            id="description"
-            placeholder="Enter product description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="price">Price</label>
-          <input
-            type="number"
-            id="price"
-            placeholder="Enter price"
-            value={price}
-            onChange={(e) => setPrice(parseFloat(e.target.value))}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="quantity">Quantity</label>
-          <input
-            type="number"
-            id="quantity"
-            placeholder="Enter quantity"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
-          />
-        </div>
-        <button onClick={handleAddProduct} disabled={!userDefinedId || !name || !description || price <= 0 || quantity <= 0}>
+    <Container>
+      <Box my={4}>
+        <Typography variant="h4" gutterBottom>
           Add Product
-        </button>
-      </div>
-    </div>
+        </Typography>
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Box component="form" noValidate autoComplete="off">
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Product Tag Number"
+              value={userDefinedId}
+              onChange={(e) => setUserDefinedId(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Product Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Product Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              variant="outlined"
+              type="number"
+              label="Price"
+              value={price}
+              onChange={(e) => setPrice(parseFloat(e.target.value))}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              variant="outlined"
+              type="number"
+              label="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(parseInt(e.target.value))}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              onClick={handleAddProduct}
+              disabled={!userDefinedId || !name || !description || price <= 0 || quantity <= 0}
+            >
+              Add Product
+            </Button>
+          </Box>
+        </Paper>
+      </Box>
+    </Container>
   );
 };
 
