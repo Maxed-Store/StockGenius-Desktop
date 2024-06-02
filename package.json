@@ -10,7 +10,14 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
-    "start-react": "react-scripts start"
+    "start-react": "react-scripts start",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.storemanagement.app",
+    "win": {
+      "target": "nsis"
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.24.6",
@@ -28,6 +35,7 @@
     "babel-loader": "^9.1.3",
     "css-loader": "^6.11.0",
     "electron": "^30.0.9",
+    "electron-builder": "^24.13.3",
     "node-loader": "^2.0.0",
     "style-loader": "^3.3.4"
   },
