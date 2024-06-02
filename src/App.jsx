@@ -77,11 +77,11 @@ function App() {
                   </ListItemIcon>
                   <ListItemText primary="Home" />
                 </ListItem>
-                <ListItem button component={NavLink} to="/products" selected={activeLink === '/products'} onClick={() => handleLinkClick('/products')}>
+                <ListItem button component={NavLink} to="/addproducts" selected={activeLink === '/addproducts'} onClick={() => handleLinkClick('/addproducts')}>
                   <ListItemIcon>
                     <StorageIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Products" />
+                  <ListItemText primary="Add Products" />
                 </ListItem>
                 <ListItem button component={NavLink} to="/sales" selected={activeLink === '/sales'} onClick={() => handleLinkClick('/sales')}>
                   <ListItemIcon>
@@ -127,7 +127,7 @@ function App() {
               element={isAuthenticated ? <HomePage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
             />
             <Route
-              path="/products"
+              path="/addproducts"
               element={isAuthenticated ? <ProductsPage user={user} /> : <Navigate to="/login" />}
             />
             <Route

@@ -39,6 +39,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [showMore, setShowMore] = useState(false);
   const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [continuousScanning, setContinuousScanning] = useState(false);
 
   const handleOpenChangePasswordModal = () => {
     setOpenChangePasswordModal(true);
@@ -67,28 +68,28 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     fetchRecentSearches();
   }, [storeId]);
 
-const handleSearch = async () => {
-  if (!searchTerm.trim()) {
-    return;
-  }
-
-  try {
-    const searchResults = await database.searchProducts(searchTerm);
-    if (searchResults.length === 0) {
-      setError('No products found');
-    } else {
-      setError(null);
-      setProducts(searchResults);
-      await database.addRecentSearch(storeId, searchTerm);
-      setRecentSearches((prevSearches) => {
-        const updatedSearches = [...prevSearches, searchTerm];
-        return updatedSearches.slice(-10);
-      });
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      return;
     }
-  } catch (err) {
-    setError(err.message);
-  }
-};
+
+    try {
+      const searchResults = await database.searchProducts(searchTerm);
+      if (searchResults.length === 0) {
+        setError('No products found');
+      } else {
+        setError(null);
+        setProducts(searchResults);
+        await database.addRecentSearch(storeId, searchTerm);
+        setRecentSearches((prevSearches) => {
+          const updatedSearches = [...prevSearches, searchTerm];
+          return updatedSearches.slice(-10);
+        });
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleBarcodeScan = async (barcode) => {
     console.log('Scanned barcode:', barcode);
@@ -99,12 +100,17 @@ const handleSearch = async () => {
         setError('No products found');
       } else {
         setError(null);
-        setProducts(searchResults);
-        setScanning(false);
+        setProducts((prevProducts) => [...prevProducts, ...searchResults]);
+        setBillItems((prevBillItems) => [...prevBillItems, ...searchResults]);
       }
     } catch (err) {
       setError(err.message);
-      setScanning(false);
+    }
+
+    if (continuousScanning) {
+      setTimeout(() => {
+        setScanning(true);
+      }, 500);
     }
   };
 
@@ -235,14 +241,24 @@ const handleSearch = async () => {
                   />
                 </Grid>
                 <Grid item xs={3}>
+                  <Box mb={2}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      color="secondary"
+                      onClick={handleSearch}
+                      sx={{ height: '50px', width: '100%' }}
+                    >
+                      Search
+                    </Button>
+                  </Box>
                   <Button
-                    fullWidth
                     variant="contained"
-                    color="secondary"
-                    onClick={handleSearch}
-                    sx={{ height: '100%' }}
+                    color={continuousScanning ? 'error' : 'secondary'}
+                    onClick={() => setContinuousScanning(!continuousScanning)}
+                    sx={{ height: '50px', width: '100%' }}
                   >
-                    Search
+                    {continuousScanning ? 'Stop Continuous Scanning' : 'Start Continuous Scanning'}
                   </Button>
                 </Grid>
               </Grid>
@@ -307,6 +323,11 @@ const handleSearch = async () => {
                 onUpdate={(err, result) => {
                   if (result) {
                     handleBarcodeScan(result.text);
+                  }
+                }}
+                onScan={(result) => {
+                  if (continuousScanning) {
+                    handleBarcodeScan(result);
                   }
                 }}
               />

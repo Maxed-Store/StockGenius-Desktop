@@ -116,18 +116,22 @@ function InventoryPage() {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
+                            <TableCell align="right">User Defined ID</TableCell>
                             <TableCell align="right">Name</TableCell>
                             <TableCell align="right">Quantity</TableCell>
+                            <TableCell align="right">Created At</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {products.map((product) => (
+                        {products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map((product) => (
                             <TableRow key={product.id}>
                                 <TableCell component="th" scope="row">
                                     {product.id}
                                 </TableCell>
+                                <TableCell align="right">{product.userDefinedId}</TableCell>
                                 <TableCell align="right">{product.name}</TableCell>
                                 <TableCell align="right">{product.quantity}</TableCell>
+                                <TableCell align="right">{new Date(product.createdAt).toLocaleDateString()}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

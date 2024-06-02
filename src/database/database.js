@@ -5,12 +5,49 @@ class Database {
     this.db = new Dexie('MyDatabase');
     this.db.version(2).stores({
       stores: '++id,name,address,phone',
-      products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,&[storeId+name+userDefinedId]',
-      sales: '++id,storeId,productId,quantity,total,timestamp',
+      products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]', sales: '++id,storeId,productId,quantity,total,timestamp',
       recentSearches: '++id,storeId,searchTerm,timestamp',
       categories: '++id,name',
       customers: '++id,name,email',
       users: '++id,username,passwordHash,role',
+    });
+    this.initializeCategories();
+  }
+
+  initializeCategories() {
+    return this.db.categories.count().then(count => {
+      if (count === 0) {
+        const defaultCategories = [
+          { name: 'Electronics' },
+          { name: 'Groceries' },
+          { name: 'Clothing' },
+          { name: 'Household Items' },
+          { name: 'Books' },
+          { name: 'Toys' },
+          { name: 'Furniture' },
+          { name: 'Health & Beauty' },
+          { name: 'Sports' },
+          { name: 'Automotive' },
+          { name: 'Tools' },
+          { name: 'Jewelry' },
+          { name: 'Music' },
+          { name: 'Movies' },
+          { name: 'Games' },
+          { name: 'Pet Supplies' },
+          { name: 'Office Supplies' },
+          { name: 'Baby' },
+          { name: 'Industrial' },
+          { name: 'Software' },
+          { name: 'Home Improvement' },
+          { name: 'Arts & Crafts' },
+          { name: 'Food & Drink' },
+          { name: 'Electrical' },
+          { name: 'Garden' },
+          { name: 'Travel' },
+          { name: 'Miscellaneous' },
+        ];
+        return this.db.categories.bulkAdd(defaultCategories);
+      }
     });
   }
   async createDefaultAdmin() {
@@ -21,6 +58,16 @@ class Database {
       await this.db.users.add({ username: 'admin', passwordHash, role: 'admin' });
       console.log('Default admin user created');
     }
+  }
+  async usernameExists(username) {
+    const user = await this.db.users.where({ username }).first();
+    return !!user;
+  }
+  async getUsers() {
+    return await this.db.users.toArray();
+  }
+  async removeUser(userId) {
+    return await this.db.users.delete(userId);
   }
 
   async addUser(username, password, role = 'user') {
@@ -85,7 +132,7 @@ class Database {
   }
 
   async addProduct(storeId, userDefinedId, name, description, price, quantity, categoryId) {
-    const id = await this.db.products.add({ storeId, userDefinedId, name, description, price, quantity, categoryId });
+    const id = await this.db.products.add({ storeId, userDefinedId, name, description, price, quantity, categoryId, createdAt: new Date().toISOString(), });
     return { id, storeId, userDefinedId, name, description, price, quantity, categoryId };
   }
 
@@ -206,6 +253,9 @@ class Database {
       console.error(error);
       throw error;
     }
+  }
+  async addCategory(name) {
+    return await this.db.categories.add({ name });
   }
 }
 
