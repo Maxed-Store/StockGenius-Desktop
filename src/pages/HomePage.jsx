@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import database from '../database/database';
 import ProductList from '../components/ProductList.jsx';
 import BillReceipt from '../components/BillReceipt.jsx';
+import ChangePasswordModal from './ChangePasswordModal.jsx';
 import {
   AppBar,
   Toolbar,
@@ -19,7 +20,7 @@ import {
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
 
-const HomePage = ({ storeId = 1 }) => {
+const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
@@ -28,6 +29,15 @@ const HomePage = ({ storeId = 1 }) => {
   const [store, setStore] = useState(null);
   const [newStoreName, setNewStoreName] = useState('');
   const [showMore, setShowMore] = useState(false);
+  const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
+
+  const handleOpenChangePasswordModal = () => {
+    setOpenChangePasswordModal(true);
+  };
+
+  const handleCloseChangePasswordModal = () => {
+    setOpenChangePasswordModal(false);
+  };
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -40,7 +50,7 @@ const HomePage = ({ storeId = 1 }) => {
     const fetchRecentSearches = async () => {
       if (storeId !== undefined) {
         const recentSearches = await database.getRecentSearches(storeId);
-        setRecentSearches(recentSearches.slice(-10)); // Get only the last 10 items
+        setRecentSearches(recentSearches.slice(-10)); 
       }
     };
 
@@ -121,7 +131,15 @@ const HomePage = ({ storeId = 1 }) => {
 
   return (
     <React.Fragment>
-      <CssBaseline />
+      <div>
+        <h1>Welcome, {user.username}!</h1>
+        <Button onClick={handleOpenChangePasswordModal}>Change Password</Button>
+        <ChangePasswordModal
+          user={user}
+          open={openChangePasswordModal}
+          onClose={handleCloseChangePasswordModal}
+        />
+      </div>
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>

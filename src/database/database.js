@@ -1,5 +1,5 @@
 import Dexie from 'dexie';
-
+import bcrypt from 'bcryptjs';
 class Database {
   constructor() {
     this.db = new Dexie('MyDatabase');
@@ -10,16 +10,50 @@ class Database {
       recentSearches: '++id,storeId,searchTerm,timestamp',
       categories: '++id,name',
       customers: '++id,name,email',
-      users: '++id,username,password',
+      users: '++id,username,passwordHash,role',
     });
   }
-  async addUser(username, password) {
-    return db.users.add({ username, password });
-  };
+  async createDefaultAdmin() {
+    const existingAdmin = await this.db.users.where({ role: 'admin' }).first();
+    if (!existingAdmin) {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash('admin', salt);
+      await this.db.users.add({ username: 'admin', passwordHash, role: 'admin' });
+      console.log('Default admin user created');
+    }
+  }
+
+  async addUser(username, password, role = 'user') {
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    return this.db.users.add({ username, passwordHash, role });
+  }
 
   async getUser(username) {
-    return db.users.where({ username }).first();
-  };
+    return this.db.users.where({ username }).first();
+  }
+
+  async authenticateUser(username, password) {
+    const user = await this.getUser(username);
+    if (user) {
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      if (isPasswordValid) {
+        return user;
+      }
+    }
+    return null;
+  }
+
+  async changePassword(username, oldPassword, newPassword) {
+    const user = await this.authenticateUser(username, oldPassword);
+    if (user) {
+      const salt = await bcrypt.genSalt(10);
+      const newPasswordHash = await bcrypt.hash(newPassword, salt);
+      await this.db.users.update(user.id, { passwordHash: newPasswordHash });
+      return true;
+    }
+    return false;
+  }
 
   async getStores() {
     return this.db.stores.toArray();
@@ -39,15 +73,16 @@ class Database {
     await this.db.recentSearches.add({ storeId, searchTerm, timestamp });
   }
 
-  async getRecentSearches(storeId) {
+async getRecentSearches(storeId) {
     const recentSearches = await this.db.recentSearches
       .where('storeId')
       .equals(storeId)
       .reverse()
+      .limit(10)
       .toArray();
 
     return recentSearches.map((search) => search.searchTerm);
-  }
+}
 
   async addProduct(storeId, userDefinedId, name, description, price, quantity, categoryId) {
     const id = await this.db.products.add({ storeId, userDefinedId, name, description, price, quantity, categoryId });

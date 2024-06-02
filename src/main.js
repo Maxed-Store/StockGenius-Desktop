@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
-
+import db from './database/database';
 const isDev = require('electron-is-dev'); // to check if running in development
 
 function createWindow() {
@@ -16,7 +16,8 @@ function createWindow() {
 
   });
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-
+  // Call the createDefaultAdmin function before loading the renderer process
+  db.createDefaultAdmin();
   if (isDev) {
     mainWindow.webContents.openDevTools();
   }
