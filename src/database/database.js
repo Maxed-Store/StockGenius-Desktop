@@ -4,7 +4,7 @@ class Database {
   constructor() {
     this.db = new Dexie('MyDatabase');
     this.db.version(2).stores({
-      stores: '++id,name',
+      stores: '++id,name,address,phone',
       products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,&[storeId+name+userDefinedId]',
       sales: '++id,storeId,productId,quantity,total,timestamp',
       recentSearches: '++id,storeId,searchTerm,timestamp',
@@ -73,7 +73,7 @@ class Database {
     await this.db.recentSearches.add({ storeId, searchTerm, timestamp });
   }
 
-async getRecentSearches(storeId) {
+  async getRecentSearches(storeId) {
     const recentSearches = await this.db.recentSearches
       .where('storeId')
       .equals(storeId)
@@ -82,7 +82,7 @@ async getRecentSearches(storeId) {
       .toArray();
 
     return recentSearches.map((search) => search.searchTerm);
-}
+  }
 
   async addProduct(storeId, userDefinedId, name, description, price, quantity, categoryId) {
     const id = await this.db.products.add({ storeId, userDefinedId, name, description, price, quantity, categoryId });
@@ -191,6 +191,21 @@ async getRecentSearches(storeId) {
     }
 
     return collection.toArray();
+  }
+  async searchProductsByBarcode(barcode) {
+    if (!barcode) {
+      throw new Error('Invalid barcode');
+    }
+    try {
+      const product = await this.db.products.where('userDefinedId').equals(barcode).toArray();
+      if (!product) {
+        throw new Error('No product found with the provided barcode');
+      }
+      return product
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
 }
 

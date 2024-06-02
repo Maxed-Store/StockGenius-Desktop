@@ -74,6 +74,14 @@ const Login = ({ onLogin }) => {
         >
           Login
         </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/register')}
+        >
+          Register
+        </Button>
       </Box>
     </Container>
   );

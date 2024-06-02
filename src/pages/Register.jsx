@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
 import db from '../database/database';
+import { useNavigate } from 'react-router-dom';
 
-const Register = ({ onRegister }) => {
+const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
       await db.addUser(username, password);
-      onRegister();
+      setError('');
+      navigate('/login');
     } catch (e) {
       setError('Registration failed');
     }

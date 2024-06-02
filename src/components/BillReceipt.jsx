@@ -1,32 +1,53 @@
 import React from 'react';
+import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Divider } from '@mui/material';
+import db from '../database/database';
 
 const BillReceipt = ({ billItems, onRemoveFromBill }) => {
   const totalAmount = billItems.reduce((total, item) => total + item.price, 0);
 
   return (
-    <div>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Price</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {billItems.map((item, index) => (
-            <tr key={index}>
-              <td>{item.name}</td>
-              <td>${item.price}</td>
-              <td>
-                <button onClick={() => onRemoveFromBill(index)}>Remove</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="total-amount">Total Amount: ${totalAmount.toFixed(2)}</div>
-    </div>
+    <Box p={2} component={Paper} className="bill-receipt">
+      <Box textAlign="center" mb={2} className="bill-header">
+        <Typography variant="h6">Store Name</Typography>
+        <Typography variant="subtitle1">Address Line 1</Typography>
+        <Typography variant="subtitle1">Address Line 2</Typography>
+        <Typography variant="subtitle2">Phone: (123) 456-7890</Typography>
+        <Typography variant="subtitle2">Date: {new Date().toLocaleDateString()}</Typography>
+      </Box>
+      <Divider />
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell align="right">Price</TableCell>
+              <TableCell align="center">Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {billItems.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell>{item.name}</TableCell>
+                <TableCell align="right">${item.price.toFixed(2)}</TableCell>
+                <TableCell align="center">
+                  <Button variant="outlined" color="secondary" size="small" onClick={() => onRemoveFromBill(index)}>
+                    Remove
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <Divider />
+      <Box textAlign="right" mt={2} className="total-amount">
+        <Typography variant="h6">Total Amount: ${totalAmount.toFixed(2)}</Typography>
+      </Box>
+      <Divider />
+      <Box textAlign="center" mt={2} className="bill-footer">
+        <Typography variant="body1">Thank you for shopping with us!</Typography>
+      </Box>
+    </Box>
   );
 };
 
