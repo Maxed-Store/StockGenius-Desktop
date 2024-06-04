@@ -9,10 +9,12 @@ import InventoryPage from './pages/InventoryPage.jsx';
 import LoginPage from './pages/Login.jsx';
 import RegisterPage from './pages/Register.jsx';
 import UserManagement from './pages/UserManagement.jsx';
+import BackupAndRestore from './pages/BackUpAndRestore.jsx';
 import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline, Box } from '@mui/material';
 import { Home as HomeIcon, Inventory as InventoryIcon, ShoppingCart as ShoppingCartIcon, Assessment as AssessmentIcon, People as PeopleIcon, Storage as StorageIcon } from '@mui/icons-material';
 import './index.css';
 import db from './database/database';
+import LowStockAlerts from './pages/LowStockAlerts.jsx';
 
 const drawerWidth = 240;
 
@@ -114,6 +116,21 @@ function App() {
                   <ListItemText primary="User Management" />
                 </ListItem>
               </List>
+
+              <ListItem button component={NavLink} to="/backup-and-restore" selected={activeLink === '/backup-and-restore'} onClick={() => handleLinkClick('/backup-and-restore')}>
+                <ListItemIcon>
+                  <StorageIcon />
+                </ListItemIcon>
+                <ListItemText primary="Backup and Restore" />
+              </ListItem>
+              <ListItem button component={NavLink} to="/low-stock-alerts" selected={activeLink === '/low-stock-alerts'} onClick={() => handleLinkClick('/low-stock-alerts')}>
+                <ListItemIcon>
+                  <InventoryIcon />
+                </ListItemIcon>
+                <ListItemText primary="Low Stock Alerts" />
+              </ListItem>
+
+
             </Box>
           </Drawer>
         )}
@@ -150,6 +167,9 @@ function App() {
               path="/user-management"
               element={isAuthenticated ? <UserManagement user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />}
             />
+            <Route path="/backup-and-restore" element={<BackupAndRestore />} />
+            <Route path='/low-stock-alerts' element={<LowStockAlerts />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Box>
       </Box>

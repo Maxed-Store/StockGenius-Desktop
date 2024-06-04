@@ -3,6 +3,7 @@ import { TextField, Button, Container, Typography, Box } from '@mui/material';
 import db from '../database/database';
 import { useNavigate } from 'react-router-dom';
 
+
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +24,7 @@ const Login = ({ onLogin }) => {
     } catch (e) {
       setError('An error occurred during login');
     }
+
   };
   useEffect(() => {
     const user = localStorage.getItem('user');

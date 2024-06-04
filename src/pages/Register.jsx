@@ -55,6 +55,15 @@ const Register = () => {
         >
           Register
         </Button>
+        <Button
+          fullWidth
+          variant="text"
+          color="secondary"
+          onClick={() => navigate('/login')}
+        >
+          Login with existing account
+        </Button>
+
       </Box>
     </Container>
   );
