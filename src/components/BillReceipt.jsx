@@ -1,8 +1,9 @@
 import React from 'react';
 import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Divider } from '@mui/material';
-import db from '../database/database';
+
 
 const BillReceipt = ({ billItems, onRemoveFromBill, store }) => {
+  console.log(store)
   const totalAmount = billItems.reduce((total, item) => total + item.price, 0);
 
   return (

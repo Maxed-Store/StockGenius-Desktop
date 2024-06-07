@@ -23,6 +23,7 @@ import {
 import { ExpandMore, CameraAlt } from '@mui/icons-material';
 import BarcodeScannerComponent from 'react-qr-barcode-scanner';
 import { purple } from '@mui/material/colors';
+import CreateStoreForm from '../components/CreateStoreForm.jsx';
 
 const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +35,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [newStore, setNewStore] = useState({
     name: '',
     address: '',
-    phoneNumber: ''
+    phone: ''
   });
   const [showMore, setShowMore] = useState(false);
   const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
@@ -185,7 +186,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     setNewStore({
       name: '',
       address: '',
-      phoneNumber: ''
+      phone: ''
     });
     setError(null);
   };
@@ -339,71 +340,12 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
             )}
           </Box>
         ) : (
-          <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-            <Typography variant="h4" gutterBottom>
-              Create a Store
-            </Typography>
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Enter store name"
-              value={newStore.name}
-              onChange={(e) => setNewStore({ ...newStore, name: e.target.value })}
-              sx={{ mb: 2 }}
-              InputProps={{
-                style: { backgroundColor: purple[100] }
-              }}
-            />
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Enter store address"
-              value={newStore.address}
-              onChange={(e) => setNewStore({ ...newStore, address: e.target.value })}
-              sx={{ mb: 2 }}
-              InputProps={{
-                style: { backgroundColor: purple[100] }
-              }}
-            />
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Enter store phone number"
-              value={newStore.phoneNumber}
-              onChange={(e) => setNewStore({ ...newStore, phoneNumber: e.target.value })}
-              sx={{ mb: 2 }}
-              InputProps={{
-                style: { backgroundColor: purple[100] }
-              }}
-            />
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Enter store email"
-              value={newStore.email}
-              onChange={(e) => setNewStore({ ...newStore, email: e.target.value })}
-              sx={{ mb: 2 }}
-              InputProps={{
-                style: { backgroundColor: purple[100] }
-              }}
-            />
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              You need to create a store before you can start using the app.
-            </Typography>
-            <Button
-              fullWidth
-              variant="contained"
-              color="secondary"
-              onClick={handleCreateStore}
-            >
-              Create Store
-            </Button>
-            {error && (
-              <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-                {error}
-              </Typography>
-            )}
-          </Paper>
+          <CreateStoreForm
+            newStore={newStore}
+            setNewStore={setNewStore}
+            handleCreateStore={handleCreateStore}
+            error={error}
+          />
         )}
       </Container>
     </React.Fragment>

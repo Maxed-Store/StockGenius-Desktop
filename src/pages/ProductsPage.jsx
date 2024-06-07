@@ -15,7 +15,7 @@ import database from '../database/database';
 import './ProductsPage.css';
 import AddCategoryModal from './AddCategoryModal.jsx';
 
-const ProductsPage = ({ storeId }) => {
+const ProductsPage = ({ storeId = 1 }) => {
   const [userDefinedId, setUserDefinedId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

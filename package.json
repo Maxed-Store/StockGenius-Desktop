@@ -51,6 +51,7 @@
     "@material-ui/core": "^4.12.4",
     "@mui/icons-material": "^5.15.19",
     "@mui/material": "^5.15.19",
+    "@mui/x-data-grid": "^7.6.2",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.3",
     "dexie": "^4.0.7",
@@ -62,6 +63,7 @@
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
     "react-qr-barcode-scanner": "^1.0.6",
-    "react-router-dom": "^6.23.1"
+    "react-router-dom": "^6.23.1",
+    "react-toastify": "^10.0.5"
   }
 }

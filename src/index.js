@@ -5,6 +5,7 @@ import purple from '@material-ui/core/colors/purple';
 import "./index.css";
 import App from "./App.jsx";
 import { CssBaseline } from '@material-ui/core';
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 const theme = createTheme({
   palette: {
@@ -14,10 +15,12 @@ const theme = createTheme({
 
 ReactDOM.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <App />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <App />
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
   document.getElementById('root')
 );

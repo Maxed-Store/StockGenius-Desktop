@@ -59,32 +59,12 @@ const BackupAndRestore = () => {
     handleRestore(file);
   };
 
-  const handleCloudBackup = async () => {
-    setCloudLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      await db.backupToCloud();
-      setSuccessMessage('Cloud backup successful!');
-    } catch (error) {
-      setError('Error during cloud backup: ' + error.message);
-    } finally {
-      setCloudLoading(false);
-    }
+  const handleCloudBackup = () => {
+    setError("Cloud backup is not supported yet.");
   };
 
-  const handleCloudRestore = async () => {
-    setCloudRestoreLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      await db.restoreFromCloud();
-      setSuccessMessage('Cloud restore successful!');
-    } catch (error) {
-      setError('Error during cloud restore: ' + error.message);
-    } finally {
-      setCloudRestoreLoading(false);
-    }
+  const handleCloudRestore = () => {
+    setError("Cloud restore is not supported yet.");
   };
 
   return (

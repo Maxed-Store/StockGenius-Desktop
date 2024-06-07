@@ -10,12 +10,14 @@ import LoginPage from './pages/Login.jsx';
 import RegisterPage from './pages/Register.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import BackupAndRestore from './pages/BackUpAndRestore.jsx';
-import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline, Box } from '@mui/material';
-import { Home as HomeIcon, Inventory as InventoryIcon, ShoppingCart as ShoppingCartIcon, Assessment as AssessmentIcon, People as PeopleIcon, Storage as StorageIcon } from '@mui/icons-material';
-import './index.css';
-import db from './database/database';
 import LowStockAlerts from './pages/LowStockAlerts.jsx';
 import SupplierManagement from './pages/SupplierManagement.jsx';
+import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline, Box } from '@mui/material';
+import './index.css';
+import db from './database/database';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Sidebar from './components/Sidebar.jsx';
+import ProductManagement from './pages/ProductManagement.jsx';
 
 const drawerWidth = 240;
 
@@ -23,8 +25,8 @@ function App() {
   const [activeLink, setActiveLink] = useState('/');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  useEffect(() => {
 
+  useEffect(() => {
     db.createDefaultAdmin();
   }, []);
 
@@ -55,6 +57,7 @@ function App() {
   return (
     <Router>
       <Box sx={{ display: 'flex' }}>
+        <CssBaseline />
         <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
           <Toolbar>
             <Typography variant="h6" noWrap component="div">
@@ -63,120 +66,27 @@ function App() {
           </Toolbar>
         </AppBar>
         {isAuthenticated && (
-          <Drawer
-            variant="permanent"
-            sx={{
-              width: drawerWidth,
-              flexShrink: 0,
-              [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
-            }}
-          >
-            <Toolbar />
-            <Box sx={{ overflow: 'auto' }}>
-              <List>
-                <ListItem button component={NavLink} to="/" selected={activeLink === '/'} onClick={() => handleLinkClick('/')}>
-                  <ListItemIcon>
-                    <HomeIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Home" />
-                </ListItem>
-                <ListItem button component={NavLink} to="/addproducts" selected={activeLink === '/addproducts'} onClick={() => handleLinkClick('/addproducts')}>
-                  <ListItemIcon>
-                    <StorageIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Add Products" />
-                </ListItem>
-                <ListItem button component={NavLink} to="/sales" selected={activeLink === '/sales'} onClick={() => handleLinkClick('/sales')}>
-                  <ListItemIcon>
-                    <ShoppingCartIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Sales" />
-                </ListItem>
-                <ListItem button component={NavLink} to="/sales-report" selected={activeLink === '/sales-report'} onClick={() => handleLinkClick('/sales-report')}>
-                  <ListItemIcon>
-                    <AssessmentIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Sales Report" />
-                </ListItem>
-                <ListItem button component={NavLink} to="/customers" selected={activeLink === '/customers'} onClick={() => handleLinkClick('/customers')}>
-                  <ListItemIcon>
-                    <PeopleIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Customers" />
-                </ListItem>
-                <ListItem button component={NavLink} to="/inventory" selected={activeLink === '/inventory'} onClick={() => handleLinkClick('/inventory')}>
-                  <ListItemIcon>
-                    <InventoryIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Inventory" />
-                </ListItem>
-                <ListItem button component={NavLink} to="/user-management" selected={activeLink === '/user-management'} onClick={() => handleLinkClick('/user-management')}>
-                  <ListItemIcon>
-                    <PeopleIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="User Management" />
-                </ListItem>
-              </List>
-
-              <ListItem button component={NavLink} to="/backup-and-restore" selected={activeLink === '/backup-and-restore'} onClick={() => handleLinkClick('/backup-and-restore')}>
-                <ListItemIcon>
-                  <StorageIcon />
-                </ListItemIcon>
-                <ListItemText primary="Backup and Restore" />
-              </ListItem>
-              <ListItem button component={NavLink} to="/low-stock-alerts" selected={activeLink === '/low-stock-alerts'} onClick={() => handleLinkClick('/low-stock-alerts')}>
-                <ListItemIcon>
-                  <InventoryIcon />
-                </ListItemIcon>
-                <ListItemText primary="Low Stock Alerts" />
-              </ListItem>
-              <ListItem button component={NavLink} to="/supplier-management" selected={activeLink === '/supplier-management'} onClick={() => handleLinkClick('/supplier-management')}>
-                <ListItemIcon>
-                  <PeopleIcon />
-                </ListItemIcon>
-                <ListItemText primary="Supplier Management" />
-              </ListItem>
-            </Box>
-          </Drawer>
+          <Sidebar activeLink={activeLink} handleLinkClick={handleLinkClick} drawerWidth={drawerWidth} />
         )}
         <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}>
           <Toolbar />
-          <Routes>
-            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/"
-              element={isAuthenticated ? <HomePage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/addproducts"
-              element={isAuthenticated ? <ProductsPage user={user} /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/customers"
-              element={isAuthenticated ? <CustomersPage user={user} /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/inventory"
-              element={isAuthenticated ? <InventoryPage user={user} /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/sales"
-              element={isAuthenticated ? <SalesPage user={user} /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/sales-report"
-              element={isAuthenticated ? <SalesReportPage storeId={1} user={user} /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/user-management"
-              element={isAuthenticated ? <UserManagement user={user} handleLogout={handleLogout} /> : <Navigate to="/login" />}
-            />
-            <Route path="/backup-and-restore" element={<BackupAndRestore />} />
-            <Route path='/low-stock-alerts' element={<LowStockAlerts />} />
-            <Route path='/supplier-management' element={<SupplierManagement/>}/>
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
+            <Routes>
+              <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/" element={<ProtectedRoute isAuthenticated={isAuthenticated}><HomePage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+              <Route path="/addproducts" element={<ProtectedRoute isAuthenticated={isAuthenticated}><ProductsPage user={user} /></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute isAuthenticated={isAuthenticated}><CustomersPage user={user} /></ProtectedRoute>} />
+              <Route path="/inventory" element={<ProtectedRoute isAuthenticated={isAuthenticated}><InventoryPage user={user} /></ProtectedRoute>} />
+              <Route path="/sales" element={<ProtectedRoute isAuthenticated={isAuthenticated}><SalesPage user={user} /></ProtectedRoute>} />
+              <Route path="/sales-report" element={<ProtectedRoute isAuthenticated={isAuthenticated}><SalesReportPage storeId={1} user={user} /></ProtectedRoute>} />
+              <Route path="/user-management" element={<ProtectedRoute isAuthenticated={isAuthenticated}><UserManagement user={user} handleLogout={handleLogout} /></ProtectedRoute>} />
+              <Route path="/backup-and-restore" element={<ProtectedRoute isAuthenticated={isAuthenticated}><BackupAndRestore /></ProtectedRoute>} />
+              <Route path="/low-stock-alerts" element={<ProtectedRoute isAuthenticated={isAuthenticated}><LowStockAlerts /></ProtectedRoute>} />
+              <Route path="/supplier-management" element={<ProtectedRoute isAuthenticated={isAuthenticated}><SupplierManagement /></ProtectedRoute>} />
+              <Route path="/edit-products" element={<ProtectedRoute isAuthenticated={isAuthenticated}><ProductManagement /></ProtectedRoute>} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+
         </Box>
       </Box>
     </Router>
