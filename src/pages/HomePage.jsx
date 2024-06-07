@@ -195,9 +195,9 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
 
   return (
     <React.Fragment>
-      <div>
+      <div style={{ paddingBottom: '20px' }}>
         <h1>Welcome, {user.username}!</h1>
-        <Button onClick={handleOpenChangePasswordModal} color="secondary">Change Password</Button>
+        <Button onClick={handleOpenChangePasswordModal} variant='outlined' color="secondary">Change Password</Button>
         <ChangePasswordModal
           user={user}
           open={openChangePasswordModal}
@@ -219,7 +219,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
             </Typography>
             <Box my={3}>
               <Grid container spacing={2}>
-                <Grid item xs={9}>
+                <Grid item xs={12} sm={8} md={9}>
                   <TextField
                     fullWidth
                     variant="outlined"
@@ -245,7 +245,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={3}>
+                <Grid item xs={12} sm={4} md={3}>
                   <Box mb={2}>
                     <Button
                       fullWidth
