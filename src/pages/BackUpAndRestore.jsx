@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Button, Typography, Grid, CircularProgress } from '@mui/material';
+import { Button, Typography, Grid, CircularProgress, Alert } from '@mui/material';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import db from '../database/database'; 
+import CloudQueueIcon from '@mui/icons-material/CloudQueue';
+import db from '../database/database';
 import { makeStyles } from '@material-ui/core/styles';
+
 const useStyles = makeStyles((theme) => ({
   button: {
     margin: theme.spacing(1),
+  },
+  alert: {
+    marginTop: theme.spacing(2),
   },
 }));
 
@@ -16,14 +21,20 @@ const BackupAndRestore = () => {
   const [restoreStatus, setRestoreStatus] = useState('');
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudRestoreLoading, setCloudRestoreLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const handleBackup = async () => {
     setBackupLoading(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
       await db.backupToLocal();
-      setBackupStatus('Backup successful!');
+      setSuccessMessage('Local backup successful!');
     } catch (error) {
-      setBackupStatus('Error while backing up: ' + error.message);
+      setError('Error while backing up locally: ' + error.message);
     } finally {
       setBackupLoading(false);
     }
@@ -31,11 +42,13 @@ const BackupAndRestore = () => {
 
   const handleRestore = async (file) => {
     setRestoreLoading(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
       await db.restoreFromLocal(file);
-      setRestoreStatus('Restore successful!');
+      setSuccessMessage('Local restore successful!');
     } catch (error) {
-      setRestoreStatus('Error while restoring: ' + error.message);
+      setError('Error while restoring locally: ' + error.message);
     } finally {
       setRestoreLoading(false);
     }
@@ -44,6 +57,34 @@ const BackupAndRestore = () => {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     handleRestore(file);
+  };
+
+  const handleCloudBackup = async () => {
+    setCloudLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await db.backupToCloud();
+      setSuccessMessage('Cloud backup successful!');
+    } catch (error) {
+      setError('Error during cloud backup: ' + error.message);
+    } finally {
+      setCloudLoading(false);
+    }
+  };
+
+  const handleCloudRestore = async () => {
+    setCloudRestoreLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await db.restoreFromCloud();
+      setSuccessMessage('Cloud restore successful!');
+    } catch (error) {
+      setError('Error during cloud restore: ' + error.message);
+    } finally {
+      setCloudRestoreLoading(false);
+    }
   };
 
   return (
@@ -62,7 +103,6 @@ const BackupAndRestore = () => {
             Backup Database
           </Button>
           {backupLoading && <CircularProgress size={24} />}
-          {backupStatus && <Typography>{backupStatus}</Typography>}
         </Grid>
         <Grid item>
           <input
@@ -87,9 +127,36 @@ const BackupAndRestore = () => {
             </Button>
           </label>
           {restoreLoading && <CircularProgress size={24} />}
-          {restoreStatus && <Typography>{restoreStatus}</Typography>}
+        </Grid>
+        <Grid item>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<CloudQueueIcon />}
+            onClick={handleCloudBackup}
+            className={classes.button}
+            disabled={cloudLoading}
+          >
+            Backup to Cloud
+          </Button>
+          {cloudLoading && <CircularProgress size={24} />}
+        </Grid>
+        <Grid item>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<CloudQueueIcon />}
+            onClick={handleCloudRestore}
+            className={classes.button}
+            disabled={cloudRestoreLoading}
+          >
+            Restore from Cloud
+          </Button>
+          {cloudRestoreLoading && <CircularProgress size={24} />}
         </Grid>
       </Grid>
+      {error && <Alert severity="error" className={classes.alert}>{error}</Alert>}
+      {successMessage && <Alert severity="success" className={classes.alert}>{successMessage}</Alert>}
     </div>
   );
 };

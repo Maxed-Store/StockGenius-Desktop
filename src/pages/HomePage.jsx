@@ -68,6 +68,10 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     fetchRecentSearches();
   }, [storeId]);
 
+  useEffect(() => {
+    database.scheduleAutomatedBackup();
+  }, []);
+
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       return;
@@ -176,8 +180,8 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
       return;
     }
 
-    const newStore = await database.addStore(newStore.name);
-    setStore(newStore);
+    const newStorelocal = await database.addStore(newStore.name);
+    setStore(newStorelocal);
     setNewStore({
       name: '',
       address: '',
@@ -306,6 +310,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
               <BillReceipt
                 billItems={billItems}
                 onRemoveFromBill={handleRemoveFromBill}
+                store={store}
               />
               <Button
                 variant="contained"
@@ -366,6 +371,17 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
               label="Enter store phone number"
               value={newStore.phoneNumber}
               onChange={(e) => setNewStore({ ...newStore, phoneNumber: e.target.value })}
+              sx={{ mb: 2 }}
+              InputProps={{
+                style: { backgroundColor: purple[100] }
+              }}
+            />
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Enter store email"
+              value={newStore.email}
+              onChange={(e) => setNewStore({ ...newStore, email: e.target.value })}
               sx={{ mb: 2 }}
               InputProps={{
                 style: { backgroundColor: purple[100] }

@@ -9,15 +9,18 @@ class Database {
       return;
     }
 
-    this.db = new Dexie('MyDatabase');
-    this.db.version(2).stores({
-      stores: '++id,name,address,phone',
+    this.db = new Dexie('maxstore');
+    this.db.version(4).stores({
+      stores: '++id,name,address,phone,email',
       products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',
       sales: '++id,storeId,productId,quantity,total,timestamp',
       recentSearches: '++id,storeId,searchTerm,timestamp',
       categories: '++id,name',
       customers: '++id,name,email',
       users: '++id,username,passwordHash,role',
+      audits: '++id,type,data,timestamp',
+      suppliers: '++id,name,email,phone,address',
+      purchaseOrders: '++id,supplierId,storeId,items,totalCost,placedAt',
     });
     this.initializeCategories();
   }
@@ -312,18 +315,86 @@ class Database {
     };
     reader.readAsText(file);
   }
-  async checkLowStock(threshold = 5) {
+
+  async checkLowStock(threshold = 6) {
     const lowStockProducts = await this.db.products.where('quantity').below(threshold).toArray();
     if (lowStockProducts.length > 0) {
-      this.sendLowStockAlert(lowStockProducts);
+      console.log("low prodcuts are ", lowStockProducts)
     }
     return lowStockProducts;
   }
 
-  async sendLowStockAlert(products) {
-    // Implement your alerting mechanism here
-    // For example, sending an email or showing a notification
-    console.log('Low stock alert for the following products:', products);
+
+
+  async scheduleAutomatedBackup(intervalInHours = 24) {
+    setInterval(async () => {
+      await this.backupToLocal();
+      console.log('Automated backup completed');
+    }, intervalInHours * 60 * 60 * 1000);
+  }
+
+  async sellProduct(storeId, productId, quantity) {
+    const product = await this.getProductById(productId);
+    if (product && product.quantity >= quantity) {
+      const sale = {
+        storeId,
+        productId,
+        quantity,
+        total: product.price * quantity,
+        timestamp: new Date().toISOString()
+      };
+      await this.addSale(sale);
+      await this.updateProductQuantity(productId, product.quantity - quantity);
+      await this.logAudit('product_sold', sale); // Log audit for reporting
+      return sale;
+    }
+    return null;
+  }
+
+  async getSales(storeId, page = 1, pageSize = 10) {
+    const totalCount = await this.db.sales.where('storeId').equals(storeId).count();
+    const sales = await this.db.sales
+      .where('storeId')
+      .equals(storeId)
+      .offset((page - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
+    const salesWithProducts = await Promise.all(
+      sales.map(async (sale) => {
+        const product = await this.getProductById(sale.productId);
+        return { ...sale, product };
+      })
+    );
+    return { totalCount, salesWithProducts };
+  }
+
+  async addSale(sale) {
+    const id = await this.db.sales.add(sale);
+    return { id, ...sale };
+  }
+  async addSupplier(name, email, phone, address) {
+    const id = await this.db.suppliers.add({ name, email, phone, address });
+    return { id, name, email, phone, address };
+  }
+
+  async getSuppliers() {
+    return this.db.suppliers.toArray();
+  }
+
+  async placePurchaseOrder(supplierId, storeId, items, totalCost) {
+    const placedAt = new Date().toISOString();
+    const id = await this.db.purchaseOrders.add({ supplierId, storeId, items, totalCost, placedAt });
+    return { id, supplierId, storeId, items, totalCost, placedAt };
+  }
+
+  async getPurchaseOrders(storeId) {
+    return this.db.purchaseOrders.where('storeId').equals(storeId).toArray();
+  }
+
+  // Audit Logs
+  async logAudit(type, data) {
+    const timestamp = new Date().toISOString();
+    await this.db.audits.add({ type, data, timestamp });
   }
 
 

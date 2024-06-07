@@ -15,6 +15,7 @@ import { Home as HomeIcon, Inventory as InventoryIcon, ShoppingCart as ShoppingC
 import './index.css';
 import db from './database/database';
 import LowStockAlerts from './pages/LowStockAlerts.jsx';
+import SupplierManagement from './pages/SupplierManagement.jsx';
 
 const drawerWidth = 240;
 
@@ -129,8 +130,12 @@ function App() {
                 </ListItemIcon>
                 <ListItemText primary="Low Stock Alerts" />
               </ListItem>
-
-
+              <ListItem button component={NavLink} to="/supplier-management" selected={activeLink === '/supplier-management'} onClick={() => handleLinkClick('/supplier-management')}>
+                <ListItemIcon>
+                  <PeopleIcon />
+                </ListItemIcon>
+                <ListItemText primary="Supplier Management" />
+              </ListItem>
             </Box>
           </Drawer>
         )}
@@ -169,6 +174,7 @@ function App() {
             />
             <Route path="/backup-and-restore" element={<BackupAndRestore />} />
             <Route path='/low-stock-alerts' element={<LowStockAlerts />} />
+            <Route path='/supplier-management' element={<SupplierManagement/>}/>
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Box>

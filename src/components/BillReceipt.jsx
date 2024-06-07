@@ -2,16 +2,16 @@ import React from 'react';
 import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Divider } from '@mui/material';
 import db from '../database/database';
 
-const BillReceipt = ({ billItems, onRemoveFromBill }) => {
+const BillReceipt = ({ billItems, onRemoveFromBill, store }) => {
   const totalAmount = billItems.reduce((total, item) => total + item.price, 0);
 
   return (
     <Box p={2} component={Paper} className="bill-receipt">
       <Box textAlign="center" mb={2} className="bill-header">
-        <Typography variant="h6">Store Name</Typography>
-        <Typography variant="subtitle1">Address Line 1</Typography>
-        <Typography variant="subtitle1">Address Line 2</Typography>
-        <Typography variant="subtitle2">Phone: (123) 456-7890</Typography>
+        <Typography variant="h6">{store?.name}</Typography>
+        <Typography variant="subtitle1">{store?.addressLine1}</Typography>
+        <Typography variant="subtitle1">{store?.addressLine2}</Typography>
+        <Typography variant="subtitle2">Phone: {store?.phone}</Typography>
         <Typography variant="subtitle2">Date: {new Date().toLocaleDateString()}</Typography>
       </Box>
       <Divider />
