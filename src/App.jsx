@@ -101,6 +101,7 @@ function App() {
             >
               <MenuItem onClick={handleClose}>Support</MenuItem>
               <MenuItem onClick={handleClose}>Buy Premium Version</MenuItem>
+              <MenuItem onClick={handleClose}>About</MenuItem>
               {/* Add more MenuItems here as needed */}
             </Menu>
           </Toolbar>

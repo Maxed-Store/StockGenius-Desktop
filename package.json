@@ -1,8 +1,8 @@
 {
-  "name": "store-mangment",
-  "productName": "store-mangment",
+  "name": "StockGenius-Deskto",
+  "productName": "StockGenius-Desktot",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "StockGenius-Deskto is a desktop application for managing store inventory and sales.",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
