@@ -18,8 +18,10 @@ import {
   Box,
   InputAdornment,
   IconButton,
+  Menu,
+  MenuItem,
 } from '@mui/material';
-import { ExpandMore, CameraAlt } from '@mui/icons-material';
+import { ExpandMore, CameraAlt, AccountCircle } from '@mui/icons-material';
 import BarcodeScannerComponent from 'react-qr-barcode-scanner';
 import { purple } from '@mui/material/colors';
 import CreateStoreForm from '../components/CreateStoreForm.jsx';
@@ -27,7 +29,7 @@ import { ipcRenderer } from 'electron';
 import { makeStyles } from '@material-ui/core/styles';
 const useStyles = makeStyles((theme) => ({
   appBar: {
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: 'purple',
     color: theme.palette.text.primary,
   },
   title: {
@@ -72,6 +74,16 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const classes = useStyles();
 
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
   const handleOpenChangePasswordModal = () => {
     setOpenChangePasswordModal(true);
   };
@@ -128,16 +140,19 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   };
 
   const handleBarcodeScan = async (barcode) => {
-    console.log('Scanned barcode:', barcode);
     try {
       const searchResults = await database.searchProductsByBarcode(barcode);
-      console.log('Search results:', searchResults);
       if (searchResults.length === 0) {
         setError('No products found');
       } else {
         setError(null);
         setProducts((prevProducts) => [...prevProducts, ...searchResults]);
         setBillItems((prevBillItems) => [...prevBillItems, ...searchResults]);
+        await database.addRecentSearch(storeId, searchTerm);
+        setRecentSearches((prevSearches) => {
+          const updatedSearches = [...prevSearches, searchTerm];
+          return updatedSearches.slice(-10);
+        });
       }
     } catch (err) {
       setError(err.message);
@@ -257,29 +272,43 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     <React.Fragment>
       <Container>
         {store ? (
-          <Box my={4}>
-            <AppBar position="static" className={classes.appBar}>
+          <Box my={4} mt={4}>
+            <AppBar position="static" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'purple' }}>
               <Toolbar>
-                <Typography variant="h6" className={classes.title}>
-                  Welcome, {user.username}!
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                  Welcome, {user.username}! to {store.name}
                 </Typography>
-                <Typography variant="h6" component="div" style={{ flexGrow: 1 }}>
-                  Welcome to {store.name}
-                </Typography>
-                <Button
-                  onClick={handleOpenChangePasswordModal}
-                  variant="outlined"
-                  color="inherit" 
-                  className={classes.button}
+
+                <IconButton
+                  size="large"
+                  edge="end"
+                  color="inherit"
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleMenu}
                 >
-                  Change Password
-                </Button>
+                  <AccountCircle />
+                </IconButton>
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorEl}
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  open={open}
+                  onClose={handleClose}
+                >
+                  <MenuItem onClick={() => { handleClose(); handleOpenChangePasswordModal(); }}>Change Password</MenuItem>
+                  <MenuItem onClick={() => { handleClose(); onLogout(); }}>Logout</MenuItem>
+                </Menu>
               </Toolbar>
-              <ChangePasswordModal
-                user={user}
-                open={openChangePasswordModal}
-                onClose={handleCloseChangePasswordModal}
-              />
             </AppBar>
             <Box my={3}>
               <Grid container spacing={2}>
@@ -324,7 +353,11 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
                   <Button
                     variant="contained"
                     color={continuousScanning ? 'error' : 'secondary'}
-                    onClick={() => setContinuousScanning(!continuousScanning)}
+                    onClick={() => {
+                      setContinuousScanning(!continuousScanning)
+                      setScanning(!scanning)
+                    }
+                    }
                     sx={{ height: '50px', width: '100%' }}
                   >
                     {continuousScanning ? 'Stop Continuous Scanning' : 'Start Continuous Scanning'}

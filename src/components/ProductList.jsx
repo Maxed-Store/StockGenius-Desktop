@@ -18,9 +18,6 @@ const ProductList = ({ products, onAddToBill }) => {
   console.log(products);
   return (
     <Box my={3}>
-      <Typography variant="h5" gutterBottom>
-        Products
-      </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>

@@ -9,7 +9,39 @@ const Register = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+
+
+  const validatePassword = (password) => {
+    const errors = [];
+    if (password.length < 8) {
+      errors.push("at least 8 characters");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("one uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("one lowercase letter");
+    }
+    if (!/\d/.test(password)) {
+      errors.push("one digit");
+    }
+    if (!/[!@#$%^&*]/.test(password)) {
+      errors.push("one special character (!@#$%^&*)");
+    }
+
+    if (errors.length > 0) {
+      return "Password must contain " + errors.join(", ") + ".";
+    }
+    return "";
+  };
   const handleRegister = async () => {
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    // Proceed with registration if there's no error
     try {
       await db.addUser(username, password);
       setError('');
@@ -34,6 +66,7 @@ const Register = () => {
           fullWidth
           variant="outlined"
           label="Username"
+          color="secondary"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           sx={{ mb: 2 }}
@@ -42,6 +75,7 @@ const Register = () => {
           fullWidth
           variant="outlined"
           type="password"
+          color="secondary"
           label="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -50,20 +84,20 @@ const Register = () => {
         <Button
           fullWidth
           variant="contained"
-          color="primary"
+          color="secondary"
           onClick={handleRegister}
+          style={{ marginBottom: '10px' }}
         >
           Register
         </Button>
         <Button
           fullWidth
-          variant="text"
+          variant="outlined"
           color="secondary"
           onClick={() => navigate('/login')}
         >
           Login with existing account
         </Button>
-
       </Box>
     </Container>
   );

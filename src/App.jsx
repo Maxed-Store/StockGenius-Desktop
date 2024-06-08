@@ -12,12 +12,13 @@ import UserManagement from './pages/UserManagement.jsx';
 import BackupAndRestore from './pages/BackUpAndRestore.jsx';
 import LowStockAlerts from './pages/LowStockAlerts.jsx';
 import SupplierManagement from './pages/SupplierManagement.jsx';
-import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, IconButton, Menu, MenuItem, Box, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline } from '@mui/material';
 import './index.css';
 import db from './database/database';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import ProductManagement from './pages/ProductManagement.jsx';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const drawerWidth = 240;
 
@@ -25,6 +26,17 @@ function App() {
   const [activeLink, setActiveLink] = useState('/');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
 
   useEffect(() => {
     db.createDefaultAdmin();
@@ -60,9 +72,37 @@ function App() {
         <CssBaseline />
         <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'purple' }}>
           <Toolbar>
-            <Typography variant="h6" noWrap component="div">
-              MaxStore Local
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+              MaxStore Stock Management System
             </Typography>
+            <IconButton
+              size="large"
+              edge="end"
+              color="inherit"
+              aria-label="more"
+              aria-controls="long-menu"
+              aria-haspopup="true"
+              onClick={handleClick}
+            >
+              <MoreVertIcon />
+            </IconButton>
+            <Menu
+              id="long-menu"
+              anchorEl={anchorEl}
+              keepMounted
+              open={open}
+              onClose={handleClose}
+              PaperProps={{
+                style: {
+                  maxHeight: 48 * 4.5,
+                  width: '20ch',
+                },
+              }}
+            >
+              <MenuItem onClick={handleClose}>Support</MenuItem>
+              <MenuItem onClick={handleClose}>Buy Premium Version</MenuItem>
+              {/* Add more MenuItems here as needed */}
+            </Menu>
           </Toolbar>
         </AppBar>
         {isAuthenticated && (

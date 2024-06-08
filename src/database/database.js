@@ -264,7 +264,7 @@ class Database {
         };
         await this.addSale(sale);
         await this.updateProductQuantity(productId, product.quantity - quantity);
-        await this.logAudit('product_sold', sale); // Log audit for reporting
+        await this.logAudit('product_sold', sale);
         return sale;
       }
     } catch (error) {
@@ -306,6 +306,12 @@ class Database {
 
   // Recent Searches related functions
   async addRecentSearch(storeId, searchTerm) {
+
+    if (searchTerm.length <= 5 || searchTerm.trim() === '') {
+      console.error('Search term must be more than 5 characters and not empty');
+      return;
+    }
+
     const timestamp = new Date().toISOString();
     try {
       await this.db.recentSearches.add({ storeId, searchTerm, timestamp });

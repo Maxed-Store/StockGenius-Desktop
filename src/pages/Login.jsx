@@ -68,22 +68,29 @@ const Login = ({ onLogin }) => {
           onChange={(e) => setPassword(e.target.value)}
           sx={{ mb: 2 }}
         />
-        <Button
-          fullWidth
-          variant="contained"
-          color="primary"
-          onClick={handleLogin}
-        >
-          Login
-        </Button>
-        <Button
-          fullWidth
-          variant="contained"
-          color="primary"
-          onClick={() => navigate('/register')}
-        >
-          Register
-        </Button>
+        <div style={{ paddingBottom: '10px' }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            color="secondary"
+            onClick={handleLogin}
+          >
+            Login
+          </Button>
+        </div>
+        <div>
+          <Button
+            fullWidth
+            variant="outlined"
+            color="secondary"
+            onClick={() => navigate('/register')}
+          >
+            Register
+          </Button>
+        </div>
+        <Typography variant="body2" sx={{ mt: 2 }}>
+          Don't have an account click Register
+        </Typography>
       </Box>
     </Container>
   );
