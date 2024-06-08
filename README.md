@@ -33,6 +33,9 @@ npm start
 # Running in Debug Mode
 
 This document provides instructions on how to run the application in debug mode on both Unix-based systems (like Linux or macOS) and Windows.
+```bash
+npm run start -- --inspect-electron
+```
 
 ## Unix-based Systems
 

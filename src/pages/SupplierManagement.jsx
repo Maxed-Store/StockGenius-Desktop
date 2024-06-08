@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { Typography, TextField, Button, Select, MenuItem, CircularProgress, List, ListItem } from '@mui/material';
 import { styled } from '@mui/system';
 import db from '../database/database';
+import { Chip } from '@material-ui/core';
 
 const SupplierManagementContainer = styled('div')`
   max-width: 1000px;
@@ -266,7 +267,12 @@ const SupplierManagement = () => {
               <ListItem key={order.id}>
                 <strong>Supplier:</strong> {suppliers.find((supplier) => supplier.id === order.supplierId)?.name}
                 <br />
-                <strong>Items:</strong> {order.items.join(', ')}
+                <strong>Items:</strong> <div>
+                  {order.items.map((item, index) => (
+                    <Chip
+                      key={index} label={item} style={{ margin: 2 }} />
+                  ))}
+                </div>
                 <br />
                 <strong>Total Cost:</strong> {order.totalCost}
                 <br />
