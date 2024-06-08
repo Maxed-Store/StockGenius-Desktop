@@ -32,7 +32,7 @@ const ProductsPage = ({ storeId = 1 }) => {
     fetchCategories();
   }, []);
 
-  const handleAddCategory = async () => {
+  const handleAddCategory = async (newCategoryName) => {
     if (newCategoryName) {
       await database.addCategory(newCategoryName);
       const categories = await database.getCategories();

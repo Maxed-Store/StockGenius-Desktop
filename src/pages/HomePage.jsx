@@ -305,7 +305,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
                   open={open}
                   onClose={handleClose}
                 >
-                  <MenuItem onClick={() => { handleClose(); handleOpenChangePasswordModal(); }}>Change Password</MenuItem>
+                  <MenuItem onClick={() => { handleCloseChangePasswordModal(); handleOpenChangePasswordModal(); }}>Change Password</MenuItem>
                   <MenuItem onClick={() => { handleClose(); onLogout(); }}>Logout</MenuItem>
                 </Menu>
               </Toolbar>

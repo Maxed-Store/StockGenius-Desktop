@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@material-ui/core';
 
 
-function AddCategoryModal({handleAddCategory}) {
+function AddCategoryModal({ handleAddCategory }) {
     const [open, setOpen] = useState(false);
     const [categoryName, setCategoryName] = useState('');
 
@@ -40,7 +40,10 @@ function AddCategoryModal({handleAddCategory}) {
                     <Button onClick={handleClose} color="primary">
                         Cancel
                     </Button>
-                    <Button onClick={handleAddCategory} color="primary">
+                    <Button onClick={() => {
+                        handleAddCategory(categoryName)
+                        handleClose()
+                    }} color="primary">
                         Add
                     </Button>
                 </DialogActions>
