@@ -9,7 +9,7 @@ class Database {
       return;
     }
 
-    this.db = new Dexie('maxstore2');
+    this.db = new Dexie('maxstore');
     this.db.version(6).stores({
       stores: '++id,name,address,phone,email',
       products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',

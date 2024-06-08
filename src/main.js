@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const isDev = require('electron-is-dev'); // to check if running in development
 
@@ -45,3 +45,14 @@ app.on('before-quit', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+ipcMain.on('print-bill', (event, billHTML) => {
+  const printWindow = new BrowserWindow({ show: false });
+  printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(billHTML)}`);
+  printWindow.webContents.on('did-finish-load', () => {
+    printWindow.webContents.print({}, (success, errorType) => {
+      if (!success) console.log(errorType);
+      printWindow.close();
+    });
+  });
+});

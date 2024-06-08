@@ -10,9 +10,12 @@ import {
   TableRow,
   Paper,
   Button,
+  Tooltip,
 } from '@mui/material';
+import { Warning as WarningIcon } from '@mui/icons-material';
 
 const ProductList = ({ products, onAddToBill }) => {
+  console.log(products);
   return (
     <Box my={3}>
       <Typography variant="h5" gutterBottom>
@@ -37,13 +40,22 @@ const ProductList = ({ products, onAddToBill }) => {
                 <TableCell>${product.price}</TableCell>
                 <TableCell>{product.quantity}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => onAddToBill(product)}
-                  >
-                    Add to Bill
-                  </Button>
+                  <Tooltip title={parseInt(product.quantity, 10) === 0 ? "Out of stock" : "Add to bill"}>
+                    <span> {/* Tooltip needs a span if the child is disabled */}
+                      <Button
+                        variant="contained"
+                        style={{
+                          backgroundColor: parseInt(product.quantity, 10) === 0 ? "#FFEB3B" : "", 
+                          color: parseInt(product.quantity, 10) === 0 ? "black" : "", 
+                        }}
+                        onClick={() => onAddToBill(product)}
+                        disabled={parseInt(product.quantity, 10) === 0}
+                        startIcon={parseInt(product.quantity, 10) === 0 ? <WarningIcon /> : null}
+                      >
+                        {parseInt(product.quantity, 10) === 0 ? "Out of Stock" : "Add to Bill"}
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

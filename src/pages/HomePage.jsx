@@ -3,6 +3,7 @@ import database from '../database/database';
 import ProductList from '../components/ProductList.jsx';
 import BillReceipt from '../components/BillReceipt.jsx';
 import ChangePasswordModal from './ChangePasswordModal.jsx';
+import SkeletonLoading from '../components/SkeletonLoading.jsx';
 import {
   AppBar,
   Toolbar,
@@ -15,8 +16,6 @@ import {
   Grid,
   Paper,
   Box,
-  CssBaseline,
-  Collapse,
   InputAdornment,
   IconButton,
 } from '@mui/material';
@@ -24,6 +23,35 @@ import { ExpandMore, CameraAlt } from '@mui/icons-material';
 import BarcodeScannerComponent from 'react-qr-barcode-scanner';
 import { purple } from '@mui/material/colors';
 import CreateStoreForm from '../components/CreateStoreForm.jsx';
+import { ipcRenderer } from 'electron';
+import { makeStyles } from '@material-ui/core/styles';
+const useStyles = makeStyles((theme) => ({
+  appBar: {
+    backgroundColor: theme.palette.background.paper,
+    color: theme.palette.text.primary,
+  },
+  title: {
+    flexGrow: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  welcomeUser: {
+    marginRight: theme.spacing(2),
+    fontWeight: 400,
+  },
+  storeName: {
+    fontWeight: 600,
+  },
+  button: {
+    borderColor: theme.palette.primary.main,
+    color: theme.palette.primary.main,
+    '&:hover': {
+      backgroundColor: theme.palette.primary.light,
+      color: theme.palette.common.white,
+    },
+  },
+}));
 
 const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +69,8 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [continuousScanning, setContinuousScanning] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const classes = useStyles();
 
   const handleOpenChangePasswordModal = () => {
     setOpenChangePasswordModal(true);
@@ -56,6 +86,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
       if (stores.length > 0) {
         setStore(stores[0]);
       }
+      setLoading(false);
     };
 
     const fetchRecentSearches = async () => {
@@ -127,53 +158,66 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     setBillItems((prevBillItems) => prevBillItems.filter((_, i) => i !== index));
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    // Update the product quantities in the database
+    for (const item of billItems) {
+      const product = await database.getProductById(item.id);
+      if (product) {
+        const newQuantity = product.quantity - 1; // Assuming quantity sold is always 1
+        await database.updateProductQuantity(item.id, newQuantity);
+      }
+    }
+
+    // Open a new window for printing the bill
     const printWindow = window.open('', '_blank');
-    const billHTML = document.querySelector('.bill-container').outerHTML;
+    const billHTML = document.querySelector('.bill-receipt').outerHTML;
 
     printWindow.document.write(`
-     <html>
-       <head>
-         <title>Print Bill</title>
-         <style>
-           body {
-             font-family: Arial, sans-serif;
-           }
-           .bill-container {
-             width: 100%;
-             margin: auto;
-           }
-           .bill-header, .bill-footer {
-             text-align: center;
-           }
-           .bill-items {
-             width: 100%;
-             border-collapse: collapse;
-           }
-           .bill-items th, .bill-items td {
-             border: 1px solid #ddd;
-             padding: 8px;
-           }
-           .bill-items th {
-             background-color: #f2f2f2;
-             text-align: left;
-           }
-           .total-amount {
-             font-weight: bold;
-           }
-         </style>
-       </head>
-       <body>
-         ${billHTML}
-       </body>
-     </html>
-   `);
+      <html>
+        <head>
+          <title>Print Bill</title>
+          <style>
+            body {
+              font-family: Courier, monospace;
+            }
+            .bill-receipt {
+              width: 100%;
+              margin: auto;
+              max-width: 400px;
+            }
+            .bill-header, .bill-footer {
+              text-align: center;
+            }
+            .bill-items {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .bill-items th, .bill-items td {
+              border: 1px solid #ddd;
+              padding: 8px;
+            }
+            .bill-items th {
+              background-color: #f2f2f2;
+              text-align: left;
+            }
+            .total-amount {
+              font-weight: bold;
+            }
+            button {
+              display: none;
+            }
+          </style>
+        </head>
+        <body>
+          ${billHTML}
+        </body>
+      </html>
+    `);
 
-    printWindow.document.addEventListener('DOMContentLoaded', () => {
-      printWindow.print();
-      printWindow.onafterprint = () => printWindow.close();
-    });
+    ipcRenderer.send('print-bill', document.querySelector('.bill-receipt').outerHTML);
+
   };
+
 
   const handleCreateStore = async () => {
     if (newStore.name.trim() === '') {
@@ -191,32 +235,52 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     setError(null);
   };
 
-  const displayedProducts = showMore ? products : products;
+  const handleSell = async () => {
+    try {
+      for (let item of billItems) {
+        await database.updateProductQuantity(item.id, item.quantity - 1);
+      }
+      setBillItems([]);
+      alert('Sale successful! Products updated.');
+    } catch (error) {
+      console.error('Error during sale:', error);
+      alert('An error occurred during the sale.');
+    }
+  };
+
+  const displayedProducts = showMore ? products : products.slice(0, 10);
+  if (loading) {
+    return <SkeletonLoading />;
+  }
 
   return (
     <React.Fragment>
-      <div style={{ paddingBottom: '20px' }}>
-        <h1>Welcome, {user.username}!</h1>
-        <Button onClick={handleOpenChangePasswordModal} variant='outlined' color="secondary">Change Password</Button>
-        <ChangePasswordModal
-          user={user}
-          open={openChangePasswordModal}
-          onClose={handleCloseChangePasswordModal}
-        />
-      </div>
-      <AppBar position="static" style={{ backgroundColor: purple[500] }}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Store Management App
-          </Typography>
-        </Toolbar>
-      </AppBar>
       <Container>
         {store ? (
           <Box my={4}>
-            <Typography variant="h4" component="h2" gutterBottom>
-              Welcome to {store.name}
-            </Typography>
+            <AppBar position="static" className={classes.appBar}>
+              <Toolbar>
+                <Typography variant="h6" className={classes.title}>
+                  Welcome, {user.username}!
+                </Typography>
+                <Typography variant="h6" component="div" style={{ flexGrow: 1 }}>
+                  Welcome to {store.name}
+                </Typography>
+                <Button
+                  onClick={handleOpenChangePasswordModal}
+                  variant="outlined"
+                  color="inherit" 
+                  className={classes.button}
+                >
+                  Change Password
+                </Button>
+              </Toolbar>
+              <ChangePasswordModal
+                user={user}
+                open={openChangePasswordModal}
+                onClose={handleCloseChangePasswordModal}
+              />
+            </AppBar>
             <Box my={3}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={8} md={9}>
@@ -308,19 +372,14 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
             </Box>
             <Box my={3} className="bill-container">
               <Typography variant="h5">Bill</Typography>
-              <BillReceipt
-                billItems={billItems}
-                onRemoveFromBill={handleRemoveFromBill}
-                store={store}
-              />
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handlePrint}
-                sx={{ mt: 2 }}
-              >
-                Print Bill
-              </Button>
+              <Box my={3} className="bill-receipt">
+                <BillReceipt
+                  billItems={billItems}
+                  onRemoveFromBill={handleRemoveFromBill}
+                  store={store}
+                  onPrint={handlePrint}
+                />
+              </Box>
             </Box>
             {scanning && (
               <BarcodeScannerComponent
@@ -351,5 +410,6 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
     </React.Fragment>
   );
 };
+
 
 export default HomePage;
