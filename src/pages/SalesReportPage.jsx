@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import db from '../database/database';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Table, TableBody, TableCell, TableHead, TableRow, TableSortLabel, TextField, Button } from '@mui/material';
 
 ChartJS.register(...registerables);
 
@@ -13,11 +13,20 @@ const SalesReportPage = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortColumn, setSortColumn] = useState('timestamp');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [filterText, setFilterText] = useState('');
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchAuditLogs = async () => {
       try {
-        const audits = await db.db.audits.toArray();
+        const offset = page * rowsPerPage;
+        const audits = await db.getAuditLogsPaginated(offset, rowsPerPage);
+        const totalCount = await db.db.audits.count();
+        setTotalPages(Math.ceil(totalCount / rowsPerPage));
 
         // Separate data for different types of audits
         const productSales = audits.filter(audit => audit.type === 'product_sold');
@@ -98,7 +107,42 @@ const SalesReportPage = () => {
     };
 
     fetchAuditLogs();
-  }, []);
+    // Fetch the total count of audit logs only once
+    const fetchTotalCount = async () => {
+      const totalCount = await db.db.audits.count();
+      setTotalPages(Math.ceil(totalCount / rowsPerPage));
+    };
+    fetchTotalCount();
+  }, [page, rowsPerPage]);
+
+  const handleSort = (column) => {
+    setSortColumn(column);
+    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  };
+
+  const handleFilterChange = (event) => {
+    setFilterText(event.target.value);
+  };
+
+  const sortedAndFilteredLogs = auditLogs
+    .filter((log) => JSON.stringify(log).toLowerCase().includes(filterText.toLowerCase()))
+    .sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setPage(newPage);
+    }
+  };
+
+  const startIndex = page * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedLogs = sortedAndFilteredLogs.slice(startIndex, endIndex);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -114,42 +158,95 @@ const SalesReportPage = () => {
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>Product Sales</h3>
-          <Bar data={productSalesData.datasets.length > 0 ? productSalesData : { datasets: [] }} options={{ scales: { y: { beginAtZero: true } } }} />
+          <Bar data={productSalesData.datasets && productSalesData.datasets.length > 0 ? productSalesData : { labels: [], datasets: [] }} options={{ scales: { y: { beginAtZero: true } } }} />
         </div>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>Inventory Changes</h3>
-          <Line data={inventoryChangesData.datasets.length > 0 ? inventoryChangesData : { datasets: [] }} options={{ scales: { y: { beginAtZero: true } } }} />
+          <Line
+            data={inventoryChangesData.datasets && inventoryChangesData.datasets.length > 0 ? inventoryChangesData : { labels: [], datasets: [] }}
+            options={{ scales: { y: { beginAtZero: true } } }}
+          />
         </div>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>User Activities</h3>
-          <Pie data={userActivityData.datasets.length > 0 ? userActivityData : { datasets: [] }} />
+          <Pie data={userActivityData.datasets && userActivityData.datasets.length > 0 ? userActivityData : { labels: [], datasets: [] }} />
         </div>
       </div>
       {auditLogs.length > 0 && (
-        <div>
-          <h3>Audit Logs Table</h3>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Data</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {auditLogs.map((audit, index) => (
-                <TableRow key={index}>
-                  <TableCell>{new Date(audit.timestamp).toLocaleString()}</TableCell>
-                  <TableCell>{audit.type}</TableCell>
-                  <TableCell>{JSON.stringify(audit.data)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+        <div><TextField
+        label="Filter Logs"
+        value={filterText}
+        onChange={handleFilterChange}
+        style={{ marginBottom: '16px' }}
+      />
+      <h3>Audit Logs Table</h3>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>
+              <TableSortLabel
+                active={sortColumn === 'timestamp'}
+                direction={sortColumn === 'timestamp' ? sortDirection : 'asc'}
+                onClick={() => handleSort('timestamp')}
+              >
+                Timestamp
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel
+                active={sortColumn === 'type'}
+                direction={sortColumn === 'type' ? sortDirection : 'asc'}
+                onClick={() => handleSort('type')}
+              >
+                Type
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel
+                active={sortColumn === 'data'}
+                direction={sortColumn === 'data' ? sortDirection : 'asc'}
+                onClick={() => handleSort('data')}
+              >
+                Data
+              </TableSortLabel>
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {paginatedLogs.map((audit, index) => (
+            <TableRow key={index}>
+              <TableCell>{new Date(audit.timestamp).toLocaleString()}</TableCell>
+              <TableCell>{audit.type}</TableCell>
+              <TableCell>{JSON.stringify(audit.data)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={page === 0}
+          onClick={() => handlePageChange(page - 1)}
+        >
+          Previous
+        </Button>
+        <span style={{ margin: '0 16px' }}>
+          Page {page + 1} of {totalPages}
+        </span>
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={page === totalPages - 1}
+          onClick={() => handlePageChange(page + 1)}
+        >
+          Next
+        </Button>
+      </div>
     </div>
-  );
+  )}
+</div>
+);
 };
 
 export default SalesReportPage;

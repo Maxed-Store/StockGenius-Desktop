@@ -25,6 +25,16 @@ class Database {
     this.initializeCategories();
   }
 
+  async getAuditLogsPaginated(offset = 0, limit = 10) {
+    const audits = await this.db.audits
+      .reverse()
+      .offset(offset)
+      .limit(limit)
+      .toArray();
+  
+    return audits;
+  }
+
   initializeCategories() {
     return this.db.categories.count().then(count => {
       if (count === 0) {
@@ -60,7 +70,9 @@ class Database {
 
   async getUsers() {
     try {
+      this.logAudit('user_activity', { action: 'get_users' })
       return await this.db.users.toArray();
+
     } catch (error) {
       console.error('Error fetching users:', error);
       return [];
@@ -69,6 +81,7 @@ class Database {
 
   async removeUser(userId) {
     try {
+      this.logAudit('user_activity', { action: 'remove_user', userId })
       return await this.db.users.delete(userId);
     } catch (error) {
       console.error('Error removing user:', error);
@@ -77,6 +90,7 @@ class Database {
 
   async addUser(username, password, role = 'user') {
     try {
+      this.logAudit('user_activity', { action: 'add_user', username, role })
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
       return await this.db.users.add({ username, passwordHash, role });
@@ -87,6 +101,7 @@ class Database {
 
   async getUser(username) {
     try {
+      this.logAudit('user_activity', { action: 'get_user', username })
       return await this.db.users.where({ username }).first();
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -97,6 +112,7 @@ class Database {
     try {
       const user = await this.getUser(username);
       if (user) {
+        this.logAudit('user_activity', { action: 'authenticate_user', username })
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
         if (isPasswordValid) {
           return user;
@@ -112,6 +128,7 @@ class Database {
     try {
       const user = await this.authenticateUser(username, oldPassword);
       if (user) {
+        this.logAudit('user_activity', { action: 'change_password', username })
         const salt = await bcrypt.genSalt(10);
         const newPasswordHash = await bcrypt.hash(newPassword, salt);
         await this.db.users.update(user.id, { passwordHash: newPasswordHash });
@@ -135,6 +152,7 @@ class Database {
 
   async addStore(name, email, phone, address) {
     try {
+      this.logAudit('user_activity', { action: 'add_store', name, email, phone, address })
       const id = await this.db.stores.add({ name, email, phone, address });
       return { id, name, email, phone, address };
     } catch (error) {
@@ -178,6 +196,7 @@ class Database {
         categoryId,
         createdAt: new Date().toISOString(),
       });
+      this.logAudit('inventory_change', { action: 'add_product', storeId, userDefinedId, name, description, price, quantity, categoryId })
       return { id, storeId, userDefinedId, name, description, price, quantity, categoryId };
     } catch (error) {
       console.error('Error adding product:', error);
@@ -194,6 +213,7 @@ class Database {
 
   async updateProductQuantity(productId, newQuantity) {
     try {
+      this.logAudit('inventory_change', { action: 'update_product_quantity', productId, newQuantity })
       await this.db.products.update(productId, { quantity: newQuantity });
     } catch (error) {
       console.error('Error updating product quantity:', error);
@@ -202,6 +222,7 @@ class Database {
 
   async updateProduct(productId, name, description, price, quantity) {
     try {
+      this.logAudit('inventory_change', { action: 'update_product', productId, name, description, price, quantity })
       await this.db.products.update(productId, { name, description, price, quantity });
       return { id: productId, name, description, price, quantity };
     } catch (error) {
@@ -275,6 +296,7 @@ class Database {
 
   async getSales(storeId, page = 1, pageSize = 10) {
     try {
+      this.logAudit('user_activity', { action: 'get_sales', storeId, page, pageSize })
       const totalCount = await this.db.sales.where('storeId').equals(storeId).count();
       const sales = await this.db.sales
         .where('storeId')
@@ -339,6 +361,7 @@ class Database {
   // Category related functions
   async addCategory(name) {
     try {
+      this.logAudit('user_activity', { action: 'add_category', name })
       const id = await this.db.categories.add({ name });
       return { id, name };
     } catch (error) {
@@ -358,6 +381,7 @@ class Database {
   // Customer related functions
   async addCustomer(name, email) {
     try {
+      this.logAudit('user_activity', { action: 'add_customer', name, email })
       const id = await this.db.customers.add({ name, email });
       return { id, name, email };
     } catch (error) {
@@ -410,6 +434,7 @@ class Database {
   // Backup and Restore functions
   async backupToLocal() {
     try {
+      this.logAudit('user_activity', { action: 'backup_to_local' })
       const data = {
         stores: await this.db.stores.toArray(),
         products: await this.db.products.toArray(),
@@ -436,6 +461,7 @@ class Database {
 
   async restoreFromLocal(file) {
     try {
+      this.logAudit('user_activity', { action: 'restore_from_local' })
       const reader = new FileReader();
       reader.onload = async (event) => {
         const data = JSON.parse(event.target.result);
@@ -493,6 +519,7 @@ class Database {
   // Supplier related functions
   async addSupplier(name, email, phone, address) {
     try {
+      this.logAudit('user_activity', { action: 'add_supplier', name, email, phone, address })
       const id = await this.db.suppliers.add({ name, email, phone, address });
       return { id, name, email, phone, address };
     } catch (error) {
@@ -512,6 +539,7 @@ class Database {
 
   async placePurchaseOrder(supplierId, storeId, items, totalCost) {
     try {
+      this.logAudit('user_activity', { action: 'place_purchase_order', supplierId, storeId, items, totalCost })
       const placedAt = new Date().toISOString();
       const id = await this.db.purchaseOrders.add({ supplierId, storeId, items, totalCost, placedAt });
       return { id, supplierId, storeId, items, totalCost, placedAt };
