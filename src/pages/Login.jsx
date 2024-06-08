@@ -39,61 +39,72 @@ const Login = ({ onLogin }) => {
   }
 
 
-  return (
-
-    <Container>
-      <Box my={4}>
-        <Typography variant="h4" gutterBottom>
-          Login
-        </Typography>
-        {error && (
-          <Typography color="error" variant="body2">
-            {error}
+  if (user) {
+    return (
+      <Container>
+        <Box my={4}>
+          <Typography color="primary" variant="h4" gutterBottom>
+            Success! You are logged in as {user.username}.
           </Typography>
-        )}
-        <TextField
-          fullWidth
-          variant="outlined"
-          label="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          variant="outlined"
-          type="password"
-          label="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <div style={{ paddingBottom: '10px' }}>
-          <Button
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            onClick={handleLogin}
-          >
+        </Box>
+      </Container>
+    );
+  } else {
+    return (
+      <Container>
+        <Box my={4}>
+          <Typography variant="h4" gutterBottom>
             Login
-          </Button>
-        </div>
-        <div>
-          <Button
+          </Typography>
+          {error && (
+            <Typography color="error" variant="body2">
+              {error}
+            </Typography>
+          )}
+          <TextField
             fullWidth
             variant="outlined"
-            color="secondary"
-            onClick={() => navigate('/register')}
-          >
-            Register
-          </Button>
-        </div>
-        <Typography variant="body2" sx={{ mt: 2 }}>
-          Don't have an account click Register
-        </Typography>
-      </Box>
-    </Container>
-  );
-};
+            label="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            variant="outlined"
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <div style={{ paddingBottom: '10px' }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="secondary"
+              onClick={handleLogin}
+            >
+              Login
+            </Button>
+          </div>
+          <div>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="secondary"
+              onClick={() => navigate('/register')}
+            >
+              Register
+            </Button>
+          </div>
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            Don't have an account click Register
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+}
 
-export default Login;
+  export default Login;

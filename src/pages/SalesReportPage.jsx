@@ -143,6 +143,16 @@ const SalesReportPage = () => {
   const startIndex = page * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedLogs = sortedAndFilteredLogs.slice(startIndex, endIndex);
+  const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+
+  const assignColorsToDatasets = (data) => {
+    if (data.datasets && data.datasets.length > 0) {
+      const dataset = data.datasets[0];
+      dataset.backgroundColor = dataset.data.map((_, index) => colors[index % colors.length]);
+      return { ...data, datasets: [dataset] };
+    }
+    return data;
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -169,7 +179,7 @@ const SalesReportPage = () => {
         </div>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>User Activities</h3>
-          <Pie data={userActivityData.datasets && userActivityData.datasets.length > 0 ? userActivityData : { labels: [], datasets: [] }} />
+          <Pie data={userActivityData.datasets && userActivityData.datasets.length > 0 ? assignColorsToDatasets(userActivityData) : { labels: [], datasets: [] }} />
         </div>
       </div>
       {auditLogs.length > 0 && (
