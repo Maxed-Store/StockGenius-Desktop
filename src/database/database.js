@@ -25,13 +25,13 @@ class Database {
     this.initializeCategories();
   }
 
-  async getAuditLogsPaginated(offset = 0, limit = 10) {
+  async getAuditLogsPaginated(offset = 0, limit = 100) {
     const audits = await this.db.audits
       .reverse()
       .offset(offset)
       .limit(limit)
       .toArray();
-  
+
     return audits;
   }
 
@@ -70,7 +70,6 @@ class Database {
 
   async getUsers() {
     try {
-      this.logAudit('user_activity', { action: 'get_users' })
       return await this.db.users.toArray();
 
     } catch (error) {

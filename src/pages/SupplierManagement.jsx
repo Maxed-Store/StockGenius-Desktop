@@ -5,7 +5,7 @@ import { styled } from '@mui/system';
 import db from '../database/database';
 
 const SupplierManagementContainer = styled('div')`
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
   background-color: #f9f9f9;
