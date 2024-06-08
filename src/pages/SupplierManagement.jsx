@@ -268,9 +268,16 @@ const SupplierManagement = () => {
                 <strong>Supplier:</strong> {suppliers.find((supplier) => supplier.id === order.supplierId)?.name}
                 <br />
                 <strong>Items:</strong> <div>
-                  {order.items.map((item, index) => (
+                  {order.items.filter(item => item.trim() !== '').map((item, index) => (
                     <Chip
-                      key={index} label={item} style={{ margin: 2 }} />
+                      key={index}
+                      label={item}
+                      style={{
+                        margin: 2,
+                        backgroundColor: 'green',
+                        color: 'white',
+                      }}
+                    />
                   ))}
                 </div>
                 <br />
