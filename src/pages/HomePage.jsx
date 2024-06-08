@@ -305,7 +305,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
                   open={open}
                   onClose={handleClose}
                 >
-                  <MenuItem onClick={() => { handleCloseChangePasswordModal(); handleOpenChangePasswordModal(); }}>Change Password</MenuItem>
+                  <MenuItem onClick={() => { handleOpenChangePasswordModal(); }}>Change Password</MenuItem>
                   <MenuItem onClick={() => { handleClose(); onLogout(); }}>Logout</MenuItem>
                 </Menu>
               </Toolbar>
@@ -440,6 +440,14 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
           />
         )}
       </Container>
+      {openChangePasswordModal && (
+        <ChangePasswordModal
+          open={openChangePasswordModal}
+          onClose={handleCloseChangePasswordModal}
+          user={user}
+        />
+      )
+      }
     </React.Fragment>
   );
 };
