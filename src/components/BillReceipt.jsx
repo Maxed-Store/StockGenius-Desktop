@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -10,9 +10,12 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Divider
+  Divider,
+  Snackbar
 } from '@mui/material';
 import { makeStyles } from '@material-ui/core/styles';
+import Alert from './Alert.jsx';
+
 
 const useStyles = makeStyles((theme) => ({
   receipt: {
@@ -64,9 +67,42 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const BillReceipt = ({ billItems, onRemoveFromBill, store, onPrint }) => {
+
+const BillReceipt = ({ billItems, onRemoveFromBill, store, onPrint, products, handleAddToBill }) => {
   const classes = useStyles();
-  const totalAmount = billItems.reduce((total, item) => total + item.price, 0);
+  const [open, setOpen] = useState(false);
+
+  // Group items by name and calculate quantities and total amount
+  const itemMap = billItems.reduce((map, item) => {
+    if (map[item.name]) {
+      map[item.name].quantity += 1;
+      map[item.name].totalPrice += item.price;
+    } else {
+      map[item.name] = { ...item, quantity: 1, totalPrice: item.price };
+    }
+    return map;
+  }, {});
+
+  const groupedItems = Object.values(itemMap);
+  const totalAmount = groupedItems.reduce((total, item) => total + item.totalPrice, 0);
+
+  const handleAddToBillChecked = (item) => {
+    const product = products.find((product) => product.name === item.name);
+    const currentQuantity = itemMap[item.name] ? itemMap[item.name].quantity : 0;
+
+    if (currentQuantity < parseInt(product.quantity, 10)) {
+      handleAddToBill(item);
+    } else {
+      setOpen(true);
+    }
+  };
+
+  const handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpen(false);
+  };
 
   return (
     <Box component={Paper} className={classes.receipt}>
@@ -78,22 +114,24 @@ const BillReceipt = ({ billItems, onRemoveFromBill, store, onPrint }) => {
         <Typography variant="body2">Date: {new Date().toLocaleDateString()}</Typography>
       </Box>
       <Divider />
-      {billItems.length > 0 ? (
+      {groupedItems.length > 0 ? (
         <>
           <TableContainer className={classes.table}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell className={classes.tableCell}>Item</TableCell>
+                  <TableCell className={classes.tableCell} align="right">Quantity</TableCell>
                   <TableCell className={classes.tableCell} align="right">Price</TableCell>
                   <TableCell className={classes.tableCell} align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {billItems.map((item, index) => (
+                {groupedItems.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell className={classes.tableCell}>{item.name}</TableCell>
-                    <TableCell className={classes.tableCell} align="right">${item.price.toFixed(2)}</TableCell>
+                    <TableCell className={classes.tableCell} align="right">{item.quantity}</TableCell>
+                    <TableCell className={classes.tableCell} align="right">${item.totalPrice.toFixed(2)}</TableCell>
                     <TableCell className={classes.tableCell} align="center">
                       <Button
                         variant="outlined"
@@ -124,7 +162,7 @@ const BillReceipt = ({ billItems, onRemoveFromBill, store, onPrint }) => {
       <Box className={classes.footer}>
         <Typography variant="body2">Thank you for shopping with us!</Typography>
       </Box>
-      {billItems.length > 0 && (
+      {groupedItems.length > 0 && (
         <Box textAlign="center" mt={2}>
           <Button
             variant="contained"
@@ -136,6 +174,11 @@ const BillReceipt = ({ billItems, onRemoveFromBill, store, onPrint }) => {
           </Button>
         </Box>
       )}
+      <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
+        <Alert onClose={handleClose} severity="warning">
+          No more products available
+        </Alert>
+      </Snackbar> 
     </Box>
   );
 };

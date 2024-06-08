@@ -228,10 +228,19 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
         </body>
       </html>
     `);
-
     ipcRenderer.send('print-bill', document.querySelector('.bill-receipt').outerHTML);
-
   };
+  const handleAddToBillChecked = (product) => {
+    const productInBill = billItems.filter(item => item.name === product.name).length;
+    const productInStore = products.find(item => item.name === product.name);
+  
+    if (productInBill < productInStore.quantity) {
+      handleAddToBill(product);
+    } else {
+      alert('No more products available');
+    }
+  };
+  
 
 
   const handleCreateStore = async () => {
@@ -391,7 +400,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
             </Box>
             <Box my={3}>
               <Typography variant="h5">Product List</Typography>
-              <ProductList products={displayedProducts} onAddToBill={handleAddToBill} />
+              <ProductList products={displayedProducts} onAddToBill={handleAddToBillChecked} />
               {products.length > 10 && (
                 <Button
                   variant="outlined"
