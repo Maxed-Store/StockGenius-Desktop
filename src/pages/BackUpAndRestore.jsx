@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button, Typography, Grid, CircularProgress, Alert } from '@mui/material';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -25,14 +26,38 @@ const BackupAndRestore = () => {
   const [cloudRestoreLoading, setCloudRestoreLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [store, setStore] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStore = async () => {
+      try {
+        const stores = await db.getStores();
+        console.log(stores);
+        if (stores.length > 0) {
+          setStore(stores[0]);
+        }
+      } catch (error) {
+        setError('Error fetching store: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStore();
+  }, []);
 
   const handleBackup = async () => {
     setBackupLoading(true);
     setError(null);
     setSuccessMessage(null);
     try {
-      await db.backupToLocal();
-      setSuccessMessage('Local backup successful!');
+      if (store) {
+        await db.backupToLocal(store.email);
+        setSuccessMessage('Local backup successful!');
+      } else {
+        setError('Store not found.');
+      }
     } catch (error) {
       setError('Error while backing up locally: ' + error.message);
     } finally {
@@ -59,13 +84,45 @@ const BackupAndRestore = () => {
     handleRestore(file);
   };
 
-  const handleCloudBackup = () => {
-    setError("Cloud backup is not supported yet.");
+  const handleCloudBackup = async () => {
+    setCloudLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      if (store) {
+        await db.backupToMongoDB(store.email);
+        setSuccessMessage('Cloud backup successful!');
+      } else {
+        setError('Store not found.');
+      }
+    } catch (error) {
+      setError('Error while backing up to cloud: ' + error.message);
+    } finally {
+      setCloudLoading(false);
+    }
   };
 
-  const handleCloudRestore = () => {
-    setError("Cloud restore is not supported yet.");
+  const handleCloudRestore = async () => {
+    setCloudRestoreLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      if (store) {
+        await db.restoreFromMongoDB(store.email);
+        setSuccessMessage('Cloud restore successful!');
+      } else {
+        setError('Store not found.');
+      }
+    } catch (error) {
+      setError('Error while restoring from cloud: ' + error.message);
+    } finally {
+      setCloudRestoreLoading(false);
+    }
   };
+
+  if (loading) {
+    return <CircularProgress />;
+  }
 
   return (
     <div>

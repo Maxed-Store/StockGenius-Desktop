@@ -1,7 +1,11 @@
 import Dexie from 'dexie';
 import bcrypt from 'bcryptjs';
 import { defaultCategories } from '../constants';
-
+const mongoose = window.require("mongoose");
+import {
+  Store, Product, Sale, RecentSearch,
+  Category, Customer, User, Audit, Backup, Supplier, PurchaseOrder
+} from './backupSync.js'
 class Database {
   constructor() {
     if (!('indexedDB' in window)) {
@@ -10,8 +14,8 @@ class Database {
     }
 
     this.db = new Dexie('maxstore');
-    this.db.version(6).stores({
-      stores: '++id,name,address,phone,email',
+    this.db.version(7).stores({
+      stores: '++id,name,address,phone,email,backUpVersion',
       products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',
       sales: '++id,storeId,productId,quantity,total,timestamp',
       recentSearches: '++id,storeId,searchTerm,timestamp',
@@ -24,6 +28,23 @@ class Database {
     });
     this.initializeCategories();
   }
+
+  async connectToStoreDb(email) {
+    const dbName = `store_${email.replace(/[@.]/g, '_')}`;
+    const uri = `mongodb://maxstore:maxstore-password@localhost:27017/${dbName}?authSource=admin`;
+    try {
+      await mongoose.connect(uri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log('Connected to MongoDB');
+    } catch (error) {
+      console.error('Error connecting to MongoDB:', error);
+      throw error;
+    }
+  }
+
+
 
   async getAuditLogsPaginated(offset = 0, limit = 100) {
     const audits = await this.db.audits
@@ -149,7 +170,7 @@ class Database {
     }
   }
 
-  async addStore(name, email, phone, address) {
+  async addStore(name, address, phone, email) {
     try {
       this.logAudit('user_activity', { action: 'add_store', name, email, phone, address })
       const id = await this.db.stores.add({ name, email, phone, address });
@@ -430,7 +451,23 @@ class Database {
     }
   }
 
-  // Backup and Restore functions
+  async getNextCloudBackupVersion() {
+    const latestBackup = await Backup.findOne({}).sort({ version: -1 }).lean();
+    if (!latestBackup) {
+      return 1;
+    }
+    return latestBackup ? parseInt(latestBackup.version) + 1 : 1;
+  }
+
+  async getdbBackupVersion() {
+    try {
+      const store = await this.db.stores.get(1);
+      return store.backUpVersion;
+    } catch (error) {
+      console.error('Error fetching backup version:', error);
+      return null;
+    }
+  }
   async backupToLocal() {
     try {
       this.logAudit('user_activity', { action: 'backup_to_local' })
@@ -443,12 +480,21 @@ class Database {
         customers: await this.db.customers.toArray(),
         users: await this.db.users.toArray(),
       };
-
+      if (data.stores.length === 0) {
+        console.error('No data found to backup');
+        return;
+      }
+      if (data.stores[0].backUpVersion === undefined) {
+        data.stores[0].backUpVersion = 1
+      }
+      else {
+        data.stores[0].backUpVersion += 1
+      }
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'backup.json';
+      a.download = `backup_${storeEmail}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -457,17 +503,22 @@ class Database {
       console.error('Error backing up to local:', error);
     }
   }
-
   async restoreFromLocal(file) {
     try {
       this.logAudit('user_activity', { action: 'restore_from_local' })
       const reader = new FileReader();
       reader.onload = async (event) => {
         const data = JSON.parse(event.target.result);
+        const store = this.getStores()
+        localBackupVersion = store[0].backUpVersion
 
         // Clear existing data (optional)
         await this.db.transaction('rw', this.db.stores, this.db.products, this.db.sales, this.db.recentSearches, this.db.categories, this.db.customers, this.db.users, async () => {
-          await this.db.stores.clear();
+          if (data.stores[0].backUpVersion < localBackupVersion) {
+            console.log('The backup version is older than the current version')
+            return;
+          }
+          // await this.db.stores.clear();
           await this.db.products.clear();
           await this.db.sales.clear();
           await this.db.recentSearches.clear();
@@ -475,8 +526,8 @@ class Database {
           await this.db.customers.clear();
           await this.db.users.clear();
 
-          // Insert data
-          await this.db.stores.bulkAdd(data.stores);
+
+          // await this.db.stores.bulkAdd(data.stores);
           await this.db.products.bulkAdd(data.products);
           await this.db.sales.bulkAdd(data.sales);
           await this.db.recentSearches.bulkAdd(data.recentSearches);
@@ -486,8 +537,85 @@ class Database {
         });
       };
       reader.readAsText(file);
+
     } catch (error) {
       console.error('Error restoring from local:', error);
+    }
+  }
+
+  // MongoDB Backup and Restore functions
+  async backupToMongoDB(storeEmail) {
+    await this.connectToStoreDb(storeEmail);
+    try {
+      const version = await this.getNextCloudBackupVersion();
+      const data = {
+        stores: await this.db.stores.toArray(),
+        products: await this.db.products.toArray(),
+        sales: await this.db.sales.toArray(),
+        recentSearches: await this.db.recentSearches.toArray(),
+        categories: await this.db.categories.toArray(),
+        customers: await this.db.customers.toArray(),
+        users: await this.db.users.toArray(),
+      };
+      console.log('data is ', data  )
+      const backup = new Backup({ version, data, createdAt: new Date() });
+      await backup.save();
+
+      this.logAudit('user_activity', { action: 'backup_to_mongo_db', version });
+    } catch (error) {
+      console.error('Error backing up to MongoDB:', error);
+    }
+  }
+
+
+  async restoreFromMongoDB(storeEmail) {
+    debugger
+    await this.connectToStoreDb(storeEmail);
+    try {
+     const latestBackup = await Backup.findOne({}).sort({ createdAt: -1 }).lean();
+      if (!latestBackup) {
+        console.error('No backups found in MongoDB');
+        return;
+      }
+
+      const { data } = latestBackup;
+      console.log('data is ', data)
+
+      this.logAudit('user_activity', { action: 'restore_from_mongo_db', version: latestBackup.version });
+      this.db.transaction('rw', this.db.stores, this.db.products, this.db.sales, this.db.recentSearches, this.db.categories, this.db.customers, this.db.users, async () => {
+        // await this.db.stores.clear();
+        await this.db.products.clear();
+        await this.db.sales.clear();
+        await this.db.recentSearches.clear();
+        await this.db.categories.clear();
+        await this.db.customers.clear();
+        await this.db.users.clear();
+
+
+      // await this.db.stores.bulkAdd(data.stores);
+      await this.db.products.bulkAdd(data.products);
+      await this.db.sales.bulkAdd(data.sales);
+      await this.db.recentSearches.bulkAdd(data.recentSearches);
+      await this.db.categories.bulkAdd(data.categories);
+      await this.db.customers.bulkAdd(data.customers);
+      await this.db.users.bulkAdd(data.users);
+      });
+      await this.updateStoreBackUpVersion(storeEmail, latestBackup.version);
+      return true;
+    } catch (error) {
+      return false;
+      console.error('Error restoring from MongoDB:', error);
+    }
+}
+
+  async updateStoreBackUpVersion(email, backupVersion) {
+    try {
+      this.logAudit('user_activity', { action: 'update_store', email, backupVersion })
+      await this.db.stores.update(email, { backUpVersion: backupVersion });
+      return true;
+    } catch (error) {
+      console.error('Error updating store:', error);
+      return false;
     }
   }
 

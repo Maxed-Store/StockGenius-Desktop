@@ -21,7 +21,7 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
-import { ExpandMore, CameraAlt, AccountCircle } from '@mui/icons-material';
+import { ExpandMore, CameraAlt, AccountCircle, Email } from '@mui/icons-material';
 import BarcodeScannerComponent from 'react-qr-barcode-scanner';
 import { purple } from '@mui/material/colors';
 import CreateStoreForm from '../components/CreateStoreForm.jsx';
@@ -65,7 +65,8 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   const [newStore, setNewStore] = useState({
     name: '',
     address: '',
-    phone: ''
+    phone: '',
+    email: '',
   });
   const [showMore, setShowMore] = useState(false);
   const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
@@ -249,12 +250,13 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
       return;
     }
 
-    const newStorelocal = await database.addStore(newStore.name);
+    const newStorelocal = await database.addStore(newStore.name, newStore.address, newStore.phone, newStore.email);
     setStore(newStorelocal);
     setNewStore({
       name: '',
       address: '',
-      phone: ''
+      phone: '',
+      email: '',
     });
     setError(null);
   };

@@ -8,7 +8,7 @@ const StoreSelector = ({ onStoreChange }) => {
   React.useEffect(() => {
     const fetchStores = async () => {
       const stores = await database.getStores();
-      setStores(stores);
+      setStores(stores[0]);
       setSelectedStore(stores[0]?.id || null);
       onStoreChange(stores[0]?.id || null);
     };
