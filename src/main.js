@@ -1,20 +1,21 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
-const isDev = require('electron-is-dev'); // to check if running in development
+const isDev = require('electron-is-dev'); 
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    icon: path.join(__dirname, './src/assets/icon'),
-    webPreferences: {
-      // preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: true,
-      contextIsolation: false,
-      webSecurity: false,
-    },
-
-  });
+const mainWindow = new BrowserWindow({
+  width: 800,
+  height: 600,
+  icon: path.join(__dirname, './src/assets/icon'),
+  backgroundColor: '#2e2c29',
+  webPreferences: {
+     // preload: path.join(__dirname, 'preload.js'),
+    nodeIntegration: true,
+    contextIsolation: false,
+    webSecurity: false,
+    enableRemoteModule: true,
+  },
+});
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   if (isDev) {
