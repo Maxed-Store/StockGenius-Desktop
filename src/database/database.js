@@ -6,6 +6,8 @@ import {
   Store, Product, Sale, RecentSearch,
   Category, Customer, User, Audit, Backup, Supplier, PurchaseOrder
 } from './backupSync.js'
+import { v4 as uuidv4 } from 'uuid';
+let recentConnections = {};
 class Database {
   constructor() {
     if (!('indexedDB' in window)) {
@@ -13,38 +15,41 @@ class Database {
       return;
     }
 
-    this.db = new Dexie('maxstore');
+    this.db = new Dexie('maxstore1234');
     this.db.version(7).stores({
-      stores: '++id,name,address,phone,email,backUpVersion',
-      products: '++id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',
-      sales: '++id,storeId,productId,quantity,total,timestamp',
-      recentSearches: '++id,storeId,searchTerm,timestamp',
-      categories: '++id,name',
-      customers: '++id,name,email',
-      users: '++id,username,passwordHash,role',
-      audits: '++id,type,data,timestamp',
-      suppliers: '++id,name,email,phone,address',
-      purchaseOrders: '++id,supplierId,storeId,items,totalCost,placedAt',
+      stores: 'id,name,address,phone,email,backUpVersion',
+      products: 'id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',
+      sales: 'id,storeId,productId,quantity,total,timestamp',
+      recentSearches: 'id,storeId,searchTerm,timestamp',
+      categories: 'id,name',
+      customers: 'id,name,email',
+      users: 'id,username,passwordHash,role',
+      audits: 'id,type,data,timestamp',
+      suppliers: 'id,name,email,phone,address',
+      purchaseOrders: 'id,supplierId,storeId,items,totalCost,placedAt',
     });
     this.initializeCategories();
   }
-
   async connectToStoreDb(email) {
     const dbName = `store_${email.replace(/[@.]/g, '_')}`;
+    if (recentConnections[dbName]) {
+      console.log(`Using existing connection for ${dbName}`);
+      return recentConnections[dbName];
+    }
     const uri = `mongodb://maxstore:maxstore-password@localhost:27017/${dbName}?authSource=admin`;
     try {
-      await mongoose.connect(uri, {
+      const connection = await mongoose.connect(uri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       });
       console.log('Connected to MongoDB');
+      recentConnections[dbName] = connection;
+      return connection;
     } catch (error) {
       console.error('Error connecting to MongoDB:', error);
       throw error;
     }
   }
-
-
 
   async getAuditLogsPaginated(offset = 0, limit = 100) {
     const audits = await this.db.audits
@@ -59,11 +64,14 @@ class Database {
   initializeCategories() {
     return this.db.categories.count().then(count => {
       if (count === 0) {
-        return this.db.categories.bulkAdd(defaultCategories);
+        return this.db.categories.bulkAdd(defaultCategories.map(category => ({
+          id: uuidv4(),
+          ...category
+        })));
       }
     });
   }
-
+ch
   // User related functions
   async createDefaultAdmin() {
     try {
@@ -71,14 +79,13 @@ class Database {
       if (!existingAdmin) {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash('admin', salt);
-        await this.db.users.add({ username: 'admin', passwordHash, role: 'admin' });
+        await this.db.users.add({ id: uuidv4(), username: 'admin', passwordHash, role: 'admin' });
         console.log('Default admin user created');
       }
     } catch (error) {
       console.error('Error creating default admin:', error);
     }
   }
-
   async usernameExists(username) {
     try {
       const user = await this.db.users.where({ username }).first();
@@ -110,10 +117,10 @@ class Database {
 
   async addUser(username, password, role = 'user') {
     try {
-      this.logAudit('user_activity', { action: 'add_user', username, role })
+      this.logAudit('user_activity', { action: 'add_user', username, role });
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
-      return await this.db.users.add({ username, passwordHash, role });
+      return await this.db.users.add({ id: uuidv4(), username, passwordHash, role });
     } catch (error) {
       console.error('Error adding user:', error);
     }
@@ -172,8 +179,9 @@ class Database {
 
   async addStore(name, address, phone, email) {
     try {
-      this.logAudit('user_activity', { action: 'add_store', name, email, phone, address })
-      const id = await this.db.stores.add({ name, email, phone, address });
+      this.logAudit('user_activity', { action: 'add_store', name, email, phone, address });
+      const id = uuidv4();
+      await this.db.stores.add({ id, name, email, phone, address });
       return { id, name, email, phone, address };
     } catch (error) {
       console.error('Error adding store:', error);
@@ -206,7 +214,9 @@ class Database {
 
   async addProduct(storeId, userDefinedId, name, description, price, quantity, categoryId) {
     try {
-      const id = await this.db.products.add({
+      const id = uuidv4();
+      await this.db.products.add({
+        id,
         storeId,
         userDefinedId,
         name,
@@ -216,7 +226,7 @@ class Database {
         categoryId,
         createdAt: new Date().toISOString(),
       });
-      this.logAudit('inventory_change', { action: 'add_product', storeId, userDefinedId, name, description, price, quantity, categoryId })
+      this.logAudit('inventory_change', { action: 'add_product', storeId, userDefinedId, name, description, price, quantity, categoryId });
       return { id, storeId, userDefinedId, name, description, price, quantity, categoryId };
     } catch (error) {
       console.error('Error adding product:', error);
@@ -337,10 +347,13 @@ class Database {
     }
   }
 
-  async addSale(sale) {
+  async addSale(storeId, productId, quantity, total) {
     try {
-      const id = await this.db.sales.add(sale);
-      return { id, ...sale };
+      const id = uuidv4();
+      const timestamp = new Date().toISOString();
+      await this.db.sales.add({ id, storeId, productId, quantity, total, timestamp });
+      this.logAudit('user_activity', { action: 'add_sale', storeId, productId, quantity, total });
+      return { id, storeId, productId, quantity, total, timestamp };
     } catch (error) {
       console.error('Error adding sale:', error);
     }
@@ -349,7 +362,7 @@ class Database {
   // Recent Searches related functions
   async addRecentSearch(storeId, searchTerm) {
 
-    if (searchTerm.length <= 5 || searchTerm.trim() === '') {
+    if (searchTerm.length <= 4 || searchTerm.trim() === '') {
       console.error('Search term must be more than 5 characters and not empty');
       return;
     }
@@ -468,6 +481,7 @@ class Database {
       return null;
     }
   }
+
   async backupToLocal() {
     try {
       this.logAudit('user_activity', { action: 'backup_to_local' })
@@ -518,16 +532,6 @@ class Database {
             console.log('The backup version is older than the current version')
             return;
           }
-          // await this.db.stores.clear();
-          await this.db.products.clear();
-          await this.db.sales.clear();
-          await this.db.recentSearches.clear();
-          await this.db.categories.clear();
-          await this.db.customers.clear();
-          await this.db.users.clear();
-
-
-          // await this.db.stores.bulkAdd(data.stores);
           await this.db.products.bulkAdd(data.products);
           await this.db.sales.bulkAdd(data.sales);
           await this.db.recentSearches.bulkAdd(data.recentSearches);
@@ -557,7 +561,7 @@ class Database {
         customers: await this.db.customers.toArray(),
         users: await this.db.users.toArray(),
       };
-      console.log('data is ', data  )
+      console.log('data is ', data)
       const backup = new Backup({ version, data, createdAt: new Date() });
       await backup.save();
 
@@ -572,7 +576,7 @@ class Database {
     debugger
     await this.connectToStoreDb(storeEmail);
     try {
-     const latestBackup = await Backup.findOne({}).sort({ createdAt: -1 }).lean();
+      const latestBackup = await Backup.findOne({}).sort({ createdAt: -1 }).lean();
       if (!latestBackup) {
         console.error('No backups found in MongoDB');
         return;
@@ -583,30 +587,20 @@ class Database {
 
       this.logAudit('user_activity', { action: 'restore_from_mongo_db', version: latestBackup.version });
       this.db.transaction('rw', this.db.stores, this.db.products, this.db.sales, this.db.recentSearches, this.db.categories, this.db.customers, this.db.users, async () => {
-        // await this.db.stores.clear();
-        await this.db.products.clear();
-        await this.db.sales.clear();
-        await this.db.recentSearches.clear();
-        await this.db.categories.clear();
-        await this.db.customers.clear();
-        await this.db.users.clear();
-
-
-      // await this.db.stores.bulkAdd(data.stores);
-      await this.db.products.bulkAdd(data.products);
-      await this.db.sales.bulkAdd(data.sales);
-      await this.db.recentSearches.bulkAdd(data.recentSearches);
-      await this.db.categories.bulkAdd(data.categories);
-      await this.db.customers.bulkAdd(data.customers);
-      await this.db.users.bulkAdd(data.users);
+        await this.db.products.bulkAdd(data.products);
+        await this.db.sales.bulkAdd(data.sales);
+        await this.db.recentSearches.bulkAdd(data.recentSearches);
+        await this.db.categories.bulkAdd(data.categories);
+        await this.db.customers.bulkAdd(data.customers);
+        await this.db.users.bulkAdd(data.users);
       });
       await this.updateStoreBackUpVersion(storeEmail, latestBackup.version);
       return true;
     } catch (error) {
-      return false;
       console.error('Error restoring from MongoDB:', error);
+      return false;
     }
-}
+  }
 
   async updateStoreBackUpVersion(email, backupVersion) {
     try {
@@ -646,12 +640,12 @@ class Database {
   // Supplier related functions
   async addSupplier(name, email, phone, address) {
     try {
-      this.logAudit('user_activity', { action: 'add_supplier', name, email, phone, address })
-      const id = await this.db.suppliers.add({ name, email, phone, address });
+      this.logAudit('user_activity', { action: 'add_supplier', name, email, phone, address });
+      const id = uuidv4();
+      await this.db.suppliers.add({ id, name, email, phone, address });
       return { id, name, email, phone, address };
     } catch (error) {
       console.error('Error adding supplier:', error);
-      throw error;
     }
   }
 
@@ -666,14 +660,22 @@ class Database {
 
   async placePurchaseOrder(supplierId, storeId, items, totalCost) {
     try {
-      this.logAudit('user_activity', { action: 'place_purchase_order', supplierId, storeId, items, totalCost })
+      this.logAudit('user_activity', { action: 'add_purchase_order', supplierId, storeId, items, totalCost });
+      const id = uuidv4();
       const placedAt = new Date().toISOString();
-      const id = await this.db.purchaseOrders.add({ supplierId, storeId, items, totalCost, placedAt });
+      await this.db.purchaseOrders.add({
+        id,
+        supplierId,
+        storeId,
+        items,
+        totalCost,
+        placedAt,
+      });
       return { id, supplierId, storeId, items, totalCost, placedAt };
     } catch (error) {
-      console.error('Error placing purchase order:', error);
-      throw error;
+      console.error('Error adding purchase order:', error);
     }
+
   }
 
   async getPurchaseOrders(storeId) {
@@ -688,8 +690,12 @@ class Database {
   // Audit Logs
   async logAudit(type, data) {
     try {
-      const timestamp = new Date().toISOString();
-      await this.db.audits.add({ type, data, timestamp });
+      await this.db.audits.add({
+        id: uuidv4(),
+        type,
+        data,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Error logging audit:', error);
     }
