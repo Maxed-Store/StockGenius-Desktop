@@ -175,7 +175,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
   };
 
   const handlePrint = async () => {
-    // Update the product quantities in the database
+
     for (const item of billItems) {
       const product = await database.getProductById(item.id);
       if (product) {
@@ -184,7 +184,6 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
       }
     }
 
-    // Open a new window for printing the bill
     const printWindow = window.open('', '_blank');
     const billHTML = document.querySelector('.bill-receipt').outerHTML;
 
@@ -229,6 +228,7 @@ const HomePage = ({ storeId = 1, user, onLogout }) => {
         </body>
       </html>
     `);
+    setBillItems([]);
     ipcRenderer.send('print-bill', document.querySelector('.bill-receipt').outerHTML);
   };
   const handleAddToBillChecked = (product) => {

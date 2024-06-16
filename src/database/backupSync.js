@@ -1,7 +1,7 @@
 const mongoose = window.require("mongoose");
 const { Schema} = mongoose;
 
-// Define your schemas and models
+
 const storeSchema = new Schema({
     name: String,
     address: String,

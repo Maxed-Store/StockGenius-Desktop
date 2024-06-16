@@ -14,8 +14,7 @@ class Database {
       console.error('This browser does not support IndexedDB');
       return;
     }
-
-    this.db = new Dexie('maxstore');
+    this.db = new Dexie('maxstore123');
     this.db.version(1).stores({
       stores: 'id,name,address,phone,email,backUpVersion',
       products: 'id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',
@@ -649,7 +648,6 @@ class Database {
     }
   }
   // Purchase Order related functions Supplier related functions
-// database.js
 async updatePurchaseOrderConfirmation(orderId, confirmed) {
   try {
     const order = await this.db.purchaseOrders.get(orderId);

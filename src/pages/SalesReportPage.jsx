@@ -47,6 +47,7 @@ const SalesReportPage = () => {
               backgroundColor: 'rgba(75, 192, 192, 0.6)',
               borderColor: 'rgba(75, 192, 192, 1)',
               borderWidth: 1,
+              yAxisID: 'y1',
             },
             {
               label: 'Total Sales',
@@ -54,6 +55,7 @@ const SalesReportPage = () => {
               backgroundColor: 'rgba(255, 99, 132, 0.6)',
               borderColor: 'rgba(255, 99, 132, 1)',
               borderWidth: 1,
+              yAxisID: 'y2',
             },
           ],
         });
@@ -168,95 +170,173 @@ const SalesReportPage = () => {
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>Product Sales</h3>
-          <Bar data={productSalesData.datasets && productSalesData.datasets.length > 0 ? productSalesData : { labels: [], datasets: [] }} options={{ scales: { y: { beginAtZero: true } } }} />
+          <Bar
+            data={productSalesData.datasets && productSalesData.datasets.length > 0 ? productSalesData : { labels: [], datasets: [] }}
+            options={{
+              scales: {
+                y1: {
+                  type: 'linear',
+                  position: 'left',
+                  beginAtZero: true,
+                },
+                y2: {
+                  type: 'linear',
+                  position: 'right',
+                  beginAtZero: true,
+                  grid: {
+                    drawOnChartArea: false,
+                  },
+                },
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      let label = context.dataset.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      if (context.parsed.y !== null) {
+                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                      }
+                      return label;
+                    },
+                  },
+                },
+              },
+            }}
+          />
         </div>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>Inventory Changes</h3>
           <Line
             data={inventoryChangesData.datasets && inventoryChangesData.datasets.length > 0 ? inventoryChangesData : { labels: [], datasets: [] }}
-            options={{ scales: { y: { beginAtZero: true } } }}
+            options={{
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      let label = context.dataset.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      if (context.parsed.y !== null) {
+                        label += new Intl.NumberFormat('en-US').format(context.parsed.y);
+                      }
+                      return label;
+                    },
+                  },
+                },
+              },
+            }}
           />
         </div>
         <div style={{ width: '45%', margin: '20px 0' }}>
           <h3>User Activities</h3>
-          <Pie data={userActivityData.datasets && userActivityData.datasets.length > 0 ? assignColorsToDatasets(userActivityData) : { labels: [], datasets: [] }} />
+          <Pie
+            data={userActivityData.datasets && userActivityData.datasets.length > 0 ? assignColorsToDatasets(userActivityData) : { labels: [], datasets: [] }}
+            options={{
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      let label = context.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      if (context.raw !== null) {
+                        label += new Intl.NumberFormat('en-US').format(context.raw);
+                      }
+                      return label;
+                    },
+                  },
+                },
+              },
+            }}
+          />
         </div>
       </div>
       {auditLogs.length > 0 && (
-        <div><TextField
-        label="Filter Logs"
-        value={filterText}
-        onChange={handleFilterChange}
-        style={{ marginBottom: '16px' }}
-      />
-      <h3>Audit Logs Table</h3>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>
-              <TableSortLabel
-                active={sortColumn === 'timestamp'}
-                direction={sortColumn === 'timestamp' ? sortDirection : 'asc'}
-                onClick={() => handleSort('timestamp')}
-              >
-                Timestamp
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={sortColumn === 'type'}
-                direction={sortColumn === 'type' ? sortDirection : 'asc'}
-                onClick={() => handleSort('type')}
-              >
-                Type
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={sortColumn === 'data'}
-                direction={sortColumn === 'data' ? sortDirection : 'asc'}
-                onClick={() => handleSort('data')}
-              >
-                Data
-              </TableSortLabel>
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {paginatedLogs.map((audit, index) => (
-            <TableRow key={index}>
-              <TableCell>{new Date(audit.timestamp).toLocaleString()}</TableCell>
-              <TableCell>{audit.type}</TableCell>
-              <TableCell>{JSON.stringify(audit.data)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
-        <Button
-          variant="contained"
-          color="primary"
-          disabled={page === 0}
-          onClick={() => handlePageChange(page - 1)}
-        >
-          Previous
-        </Button>
-        <span style={{ margin: '0 16px' }}>
-          Page {page + 1} of {totalPages}
-        </span>
-        <Button
-          variant="contained"
-          color="primary"
-          disabled={page === totalPages - 1}
-          onClick={() => handlePageChange(page + 1)}
-        >
-          Next
-        </Button>
-      </div>
+        <div>
+          <TextField
+            label="Filter Logs"
+            value={filterText}
+            onChange={handleFilterChange}
+            style={{ marginBottom: '16px' }}
+          />
+          <h3>Audit Logs Table</h3>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortColumn === 'timestamp'}
+                    direction={sortColumn === 'timestamp' ? sortDirection : 'asc'}
+                    onClick={() => handleSort('timestamp')}
+                  >
+                    Timestamp
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortColumn === 'type'}
+                    direction={sortColumn === 'type' ? sortDirection : 'asc'}
+                    onClick={() => handleSort('type')}
+                  >
+                    Type
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortColumn === 'data'}
+                    direction={sortColumn === 'data' ? sortDirection : 'asc'}
+                    onClick={() => handleSort('data')}
+                  >
+                    Data
+                  </TableSortLabel>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedLogs.map((audit, index) => (
+                <TableRow key={index}>
+                  <TableCell>{new Date(audit.timestamp).toLocaleString()}</TableCell>
+                  <TableCell>{audit.type}</TableCell>
+                  <TableCell>{JSON.stringify(audit.data)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={page === 0}
+              onClick={() => handlePageChange(page - 1)}
+            >
+              Previous
+            </Button>
+            <span style={{ margin: '0 16px' }}>
+              Page {page + 1} of {totalPages}
+            </span>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={page === totalPages - 1}
+              onClick={() => handlePageChange(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
-  )}
-</div>
-);
+  );
 };
 
 export default SalesReportPage;
