@@ -15,8 +15,8 @@ class Database {
       return;
     }
 
-    this.db = new Dexie('maxstore1234');
-    this.db.version(7).stores({
+    this.db = new Dexie('maxstore');
+    this.db.version(1).stores({
       stores: 'id,name,address,phone,email,backUpVersion',
       products: 'id,storeId,userDefinedId,name,description,price,quantity,categoryId,createdAt,&[storeId+name+userDefinedId]',
       sales: 'id,storeId,productId,quantity,total,timestamp',
