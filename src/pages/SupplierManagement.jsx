@@ -1,6 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import { Typography, TextField, Button, Select, MenuItem, CircularProgress, List, ListItem } from '@mui/material';
+import {
+  Typography,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
 import { styled } from '@mui/system';
 import db from '../database/database';
 import { Chip } from '@material-ui/core';
@@ -60,6 +78,8 @@ const SupplierManagement = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [confirmOrderId, setConfirmOrderId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,6 +104,7 @@ const SupplierManagement = () => {
     setNewSupplier({ ...newSupplier, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: '' });
   };
+
 
   const validateSupplier = () => {
     const errors = {};
@@ -160,14 +181,59 @@ const SupplierManagement = () => {
         totalCost: 0,
       });
       toast.success('Purchase order placed successfully');
+      setOpenConfirmDialog(true);
+      setConfirmOrderId(purchaseOrder.id);
     } catch (error) {
       toast.error('Error placing purchase order');
     }
   };
 
+  const handleConfirmOrder = async () => {
+    try {
+      const confirmed = !purchaseOrders.find((order) => order.id === confirmOrderId)?.confirmed;
+      const updatedOrder = await db.updatePurchaseOrderConfirmation(confirmOrderId, confirmed);
+      const updatedOrders = purchaseOrders.map((order) =>
+        order.id === confirmOrderId ? updatedOrder : order
+      );
+      setPurchaseOrders(updatedOrders);
+      setOpenConfirmDialog(false);
+      toast.success(`Order ${confirmed ? 'confirmed' : 'unconfirmed'} successfully`);
+    } catch (error) {
+      toast.error('Error updating order confirmation');
+    }
+  };
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSort = (field) => {
+    const isAsc = sortField === field && sortDirection === 'asc';
+    setSortField(field);
+    setSortDirection(isAsc ? 'desc' : 'asc');
+  };
+
+  const sortedAndFilteredData = useMemo(() => {
+    let sortedData = [...purchaseOrders];
+    if (sortField) {
+      sortedData.sort((a, b) => {
+        if (a[sortField] < b[sortField]) return sortDirection === 'asc' ? -1 : 1;
+        if (a[sortField] > b[sortField]) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    if (searchQuery) {
+      sortedData = sortedData.filter((order) =>
+        order.items.some((item) => item.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+    return sortedData;
+  }, [purchaseOrders, sortField, sortDirection, searchQuery]);
+
   return (
     <SupplierManagementContainer>
       <Title>Supplier Management</Title>
+      <SectionContainer>
+      </SectionContainer>
       <SectionContainer>
         <SubTitle>Add Supplier</SubTitle>
         <Input
@@ -206,27 +272,41 @@ const SupplierManagement = () => {
           error={!!errors.address}
           helperText={errors.address}
         />
-        <StyledButton variant="contained" onClick={handleAddSupplier}>Add Supplier</StyledButton>
+        <StyledButton variant="contained" onClick={handleAddSupplier}>
+          Add Supplier
+        </StyledButton>
       </SectionContainer>
       <SectionContainer>
         <SubTitle>Suppliers List</SubTitle>
         {isLoading ? (
           <LoadingSpinner />
         ) : (
-          <List>
-            {suppliers.map((supplier) => (
-              <ListItem key={supplier.id}>
-                <strong>{supplier.name}</strong>
-                <br />
-                {supplier.email} - {supplier.phone}
-                <br />
-                {supplier.address}
-              </ListItem>
-            ))}
-          </List>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Phone</TableCell>
+                  <TableCell>Address</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {suppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell>{supplier.name}</TableCell>
+                    <TableCell>{supplier.email}</TableCell>
+                    <TableCell>{supplier.phone}</TableCell>
+                    <TableCell>{supplier.address}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </SectionContainer>
       <SectionContainer>
+        {/* ... */}
         <SubTitle>Place Purchase Order</SubTitle>
         <Select
           name="supplierId"
@@ -255,40 +335,105 @@ const SupplierManagement = () => {
           value={newPurchaseOrder.totalCost}
           onChange={handlePurchaseOrderChange}
         />
-        <StyledButton variant="contained" onClick={handleAddPurchaseOrder}>Place Purchase Order</StyledButton>
+        <StyledButton variant="contained" onClick={handleAddPurchaseOrder}>
+          Place Purchase Order
+        </StyledButton>
       </SectionContainer>
       <SectionContainer>
         <SubTitle>Purchase Orders</SubTitle>
         {isLoading ? (
           <LoadingSpinner />
         ) : (
-          <List>
-            {purchaseOrders.map((order) => (
-              <ListItem key={order.id}>
-                <strong>Supplier:</strong> {suppliers.find((supplier) => supplier.id === order.supplierId)?.name}
-                <br />
-                <strong>Items:</strong> <div>
-                  {order.items.filter(item => item.trim() !== '').map((item, index) => (
-                    <Chip
-                      key={index}
-                      label={item}
-                      style={{
-                        margin: 2,
-                        backgroundColor: 'green',
-                        color: 'white',
-                      }}
-                    />
+          <>
+            <TextField
+              label="Search Items"
+              variant="outlined"
+              size="small"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ marginBottom: '20px' }}
+            />
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell onClick={() => handleSort('supplier')}>Supplier</TableCell>
+                    <TableCell onClick={() => handleSort('items')}>Items</TableCell>
+                    <TableCell onClick={() => handleSort('totalCost')}>Total Cost</TableCell>
+                    <TableCell onClick={() => handleSort('placedAt')}>Placed At</TableCell>
+                    <TableCell onClick={() => handleSort('confirmed')}>Received</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sortedAndFilteredData.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        {suppliers.find((supplier) => supplier.id === order.supplierId)?.name}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          {order.items.filter((item) => item.trim() !== '').map((item, index) => (
+                            <Chip
+                              key={index}
+                              label={item}
+                              style={{
+                                margin: 2,
+                                backgroundColor: 'green',
+                                color: 'white',
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>{order.totalCost}</TableCell>
+                      <TableCell>{new Date(order.placedAt).toLocaleString()}</TableCell>
+                      <TableCell>{order.confirmed ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>
+                        {order.confirmed ? (
+                          <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => {
+                              setOpenConfirmDialog(true);
+                              setConfirmOrderId(order.id);
+                            }}
+                          >
+                            Unconfirm
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => {
+                              setOpenConfirmDialog(true);
+                              setConfirmOrderId(order.id);
+                            }}
+                          >
+                            Confirm
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </div>
-                <br />
-                <strong>Total Cost:</strong> {order.totalCost}
-                <br />
-                <strong>Placed At:</strong> {new Date(order.placedAt).toLocaleString()}
-              </ListItem>
-            ))}
-          </List>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
         )}
       </SectionContainer>
+      <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
+        <DialogTitle>Confirm Order</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to confirm this Action?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmDialog(false)}>Cancel</Button>
+          <Button onClick={handleConfirmOrder} color="primary" autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </SupplierManagementContainer>
   );
 };

@@ -26,7 +26,7 @@ class Database {
       users: 'id,username,passwordHash,role',
       audits: 'id,type,data,timestamp',
       suppliers: 'id,name,email,phone,address',
-      purchaseOrders: 'id,supplierId,storeId,items,totalCost,placedAt',
+      purchaseOrders: 'id,supplierId,storeId,items,totalCost,placedAt,confirmed',
     });
     this.initializeCategories();
   }
@@ -71,7 +71,7 @@ class Database {
       }
     });
   }
-ch
+  ch
   // User related functions
   async createDefaultAdmin() {
     try {
@@ -648,7 +648,29 @@ ch
       console.error('Error adding supplier:', error);
     }
   }
+  // Purchase Order related functions Supplier related functions
+// database.js
+async updatePurchaseOrderConfirmation(orderId, confirmed) {
+  try {
+    const order = await this.db.purchaseOrders.get(orderId);
+    if (!order) {
+      throw new Error(`Order with ID ${orderId} not found`);
+    }
 
+    const updatedOrder = {
+      ...order,
+      confirmed,
+    };
+
+    const action = confirmed ? 'confirm_purchase_order' : 'unconfirm_purchase_order';
+    this.logAudit('user_activity', { action, orderId, confirmed });
+    await this.db.purchaseOrders.update(orderId, updatedOrder);
+    return updatedOrder;
+  } catch (error) {
+    console.error('Error updating purchase order confirmation:', error);
+    throw error;
+  }
+}
   async getSuppliers() {
     try {
       return await this.db.suppliers.toArray();
@@ -658,9 +680,9 @@ ch
     }
   }
 
-  async placePurchaseOrder(supplierId, storeId, items, totalCost) {
+  async placePurchaseOrder(supplierId, storeId, items, totalCost, confirmed = false) {
     try {
-      this.logAudit('user_activity', { action: 'add_purchase_order', supplierId, storeId, items, totalCost });
+      this.logAudit('user_activity', { action: 'add_purchase_order', supplierId, storeId, items, totalCost, confirmed });
       const id = uuidv4();
       const placedAt = new Date().toISOString();
       await this.db.purchaseOrders.add({
@@ -670,9 +692,11 @@ ch
         items,
         totalCost,
         placedAt,
+        confirmed,
       });
       return { id, supplierId, storeId, items, totalCost, placedAt };
     } catch (error) {
+      
       console.error('Error adding purchase order:', error);
     }
 
